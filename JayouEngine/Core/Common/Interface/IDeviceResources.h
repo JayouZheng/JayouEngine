@@ -1,0 +1,6 @@
+﻿//
+// IDeviceResources.h
+//
+
+#pragma once
+

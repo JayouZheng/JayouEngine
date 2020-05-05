@@ -1,0 +1,263 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Project DefaultTargets="Build" ToolsVersion="15.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <ItemGroup Label="ProjectConfigurations">
+    <ProjectConfiguration Include="Debug|Win32">
+      <Configuration>Debug</Configuration>
+      <Platform>Win32</Platform>
+    </ProjectConfiguration>
+    <ProjectConfiguration Include="Release|Win32">
+      <Configuration>Release</Configuration>
+      <Platform>Win32</Platform>
+    </ProjectConfiguration>
+    <ProjectConfiguration Include="Debug|x64">
+      <Configuration>Debug</Configuration>
+      <Platform>x64</Platform>
+    </ProjectConfiguration>
+    <ProjectConfiguration Include="Release|x64">
+      <Configuration>Release</Configuration>
+      <Platform>x64</Platform>
+    </ProjectConfiguration>
+  </ItemGroup>
+  <PropertyGroup Label="Globals">
+    <VCProjectVersion>15.0</VCProjectVersion>
+    <ProjectGuid>{ED0AA347-A4D9-4C99-BD12-8D6C527C66F3}</ProjectGuid>
+    <Keyword>Win32Proj</Keyword>
+    <RootNamespace>JayouEngine</RootNamespace>
+    <WindowsTargetPlatformVersion>10.0.17763.0</WindowsTargetPlatformVersion>
+  </PropertyGroup>
+  <Import Project="$(VCTargetsPath)\Microsoft.Cpp.Default.props" />
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'" Label="Configuration">
+    <ConfigurationType>DynamicLibrary</ConfigurationType>
+    <UseDebugLibraries>true</UseDebugLibraries>
+    <PlatformToolset>v141</PlatformToolset>
+    <CharacterSet>Unicode</CharacterSet>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'" Label="Configuration">
+    <ConfigurationType>DynamicLibrary</ConfigurationType>
+    <UseDebugLibraries>false</UseDebugLibraries>
+    <PlatformToolset>v141</PlatformToolset>
+    <WholeProgramOptimization>true</WholeProgramOptimization>
+    <CharacterSet>Unicode</CharacterSet>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'" Label="Configuration">
+    <ConfigurationType>DynamicLibrary</ConfigurationType>
+    <UseDebugLibraries>true</UseDebugLibraries>
+    <PlatformToolset>v141</PlatformToolset>
+    <CharacterSet>Unicode</CharacterSet>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'" Label="Configuration">
+    <ConfigurationType>DynamicLibrary</ConfigurationType>
+    <UseDebugLibraries>false</UseDebugLibraries>
+    <PlatformToolset>v141</PlatformToolset>
+    <WholeProgramOptimization>true</WholeProgramOptimization>
+    <CharacterSet>Unicode</CharacterSet>
+  </PropertyGroup>
+  <Import Project="$(VCTargetsPath)\Microsoft.Cpp.props" />
+  <ImportGroup Label="ExtensionSettings">
+  </ImportGroup>
+  <ImportGroup Label="Shared">
+  </ImportGroup>
+  <ImportGroup Label="PropertySheets" Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
+    <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
+  </ImportGroup>
+  <ImportGroup Label="PropertySheets" Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
+    <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
+  </ImportGroup>
+  <ImportGroup Label="PropertySheets" Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
+    <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
+  </ImportGroup>
+  <ImportGroup Label="PropertySheets" Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
+    <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
+  </ImportGroup>
+  <PropertyGroup Label="UserMacros" />
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
+    <TargetName>$(ProjectName)</TargetName>
+    <LinkIncremental>true</LinkIncremental>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
+    <TargetName>$(ProjectName)</TargetName>
+    <LinkIncremental>true</LinkIncremental>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
+    <TargetName>$(ProjectName)</TargetName>
+    <LinkIncremental>false</LinkIncremental>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
+    <TargetName>$(ProjectName)</TargetName>
+    <LinkIncremental>false</LinkIncremental>
+  </PropertyGroup>
+  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
+    <ClCompile>
+      <PrecompiledHeader>NotUsing</PrecompiledHeader>
+      <WarningLevel>Level3</WarningLevel>
+      <Optimization>Disabled</Optimization>
+      <SDLCheck>true</SDLCheck>
+      <PreprocessorDefinitions>WIN32;_DEBUG;JAYOUENGINE_EXPORTS;_WINDOWS;_USRDLL;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <ConformanceMode>true</ConformanceMode>
+      <PrecompiledHeaderFile>
+      </PrecompiledHeaderFile>
+      <AdditionalIncludeDirectories>F:\JayouEngine\JayouEngine\assimp-5.0.1\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+    </ClCompile>
+    <Link>
+      <SubSystem>Windows</SubSystem>
+      <GenerateDebugInformation>true</GenerateDebugInformation>
+      <EnableUAC>false</EnableUAC>
+      <AdditionalLibraryDirectories>F:\JayouEngine\JayouEngine\assimp-5.0.1;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
+      <AdditionalDependencies>assimp-vc141-mtd.lib;IrrXMLd.lib;zlibstaticd.lib;%(AdditionalDependencies)</AdditionalDependencies>
+    </Link>
+  </ItemDefinitionGroup>
+  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
+    <ClCompile>
+      <PrecompiledHeader>NotUsing</PrecompiledHeader>
+      <WarningLevel>Level3</WarningLevel>
+      <Optimization>Disabled</Optimization>
+      <SDLCheck>true</SDLCheck>
+      <PreprocessorDefinitions>_DEBUG;ENGINE_EXPORTS;_WINDOWS;_USRDLL;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <ConformanceMode>true</ConformanceMode>
+      <PrecompiledHeaderFile>
+      </PrecompiledHeaderFile>
+      <AdditionalIncludeDirectories>../assimp-5.0.1/include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+    </ClCompile>
+    <Link>
+      <SubSystem>Windows</SubSystem>
+      <GenerateDebugInformation>true</GenerateDebugInformation>
+      <EnableUAC>false</EnableUAC>
+      <AdditionalDependencies>assimp-vc141-mtd.lib;IrrXMLd.lib;zlibstaticd.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalLibraryDirectories>../assimp-5.0.1;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
+    </Link>
+  </ItemDefinitionGroup>
+  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
+    <ClCompile>
+      <PrecompiledHeader>NotUsing</PrecompiledHeader>
+      <WarningLevel>Level3</WarningLevel>
+      <Optimization>MaxSpeed</Optimization>
+      <FunctionLevelLinking>true</FunctionLevelLinking>
+      <IntrinsicFunctions>true</IntrinsicFunctions>
+      <SDLCheck>true</SDLCheck>
+      <PreprocessorDefinitions>WIN32;NDEBUG;JAYOUENGINE_EXPORTS;_WINDOWS;_USRDLL;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <ConformanceMode>true</ConformanceMode>
+      <PrecompiledHeaderFile>
+      </PrecompiledHeaderFile>
+      <AdditionalIncludeDirectories>F:\JayouEngine\JayouEngine\assimp-5.0.1\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+    </ClCompile>
+    <Link>
+      <SubSystem>Windows</SubSystem>
+      <EnableCOMDATFolding>true</EnableCOMDATFolding>
+      <OptimizeReferences>true</OptimizeReferences>
+      <GenerateDebugInformation>true</GenerateDebugInformation>
+      <EnableUAC>false</EnableUAC>
+      <AdditionalLibraryDirectories>F:\JayouEngine\JayouEngine\assimp-5.0.1;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
+      <AdditionalDependencies>assimp-vc141-mt.lib;IrrXML.lib;zlibstatic.lib;%(AdditionalDependencies)</AdditionalDependencies>
+    </Link>
+  </ItemDefinitionGroup>
+  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
+    <ClCompile>
+      <PrecompiledHeader>NotUsing</PrecompiledHeader>
+      <WarningLevel>Level3</WarningLevel>
+      <Optimization>MaxSpeed</Optimization>
+      <FunctionLevelLinking>true</FunctionLevelLinking>
+      <IntrinsicFunctions>true</IntrinsicFunctions>
+      <SDLCheck>true</SDLCheck>
+      <PreprocessorDefinitions>NDEBUG;ENGINE_EXPORTS;_WINDOWS;_USRDLL;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <ConformanceMode>true</ConformanceMode>
+      <PrecompiledHeaderFile>
+      </PrecompiledHeaderFile>
+      <AdditionalIncludeDirectories>F:\JayouEngine\JayouEngine\assimp-5.0.1\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+    </ClCompile>
+    <Link>
+      <SubSystem>Windows</SubSystem>
+      <EnableCOMDATFolding>true</EnableCOMDATFolding>
+      <OptimizeReferences>true</OptimizeReferences>
+      <GenerateDebugInformation>true</GenerateDebugInformation>
+      <EnableUAC>false</EnableUAC>
+      <AdditionalLibraryDirectories>F:\JayouEngine\JayouEngine\assimp-5.0.1;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
+      <AdditionalDependencies>assimp-vc141-mt.lib;IrrXML.lib;zlibstatic.lib;%(AdditionalDependencies)</AdditionalDependencies>
+    </Link>
+  </ItemDefinitionGroup>
+  <ItemGroup>
+    <None Include="Core\Math\Functions.inl" />
+    <None Include="cpp.hint" />
+  </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="Core\Common\AssimpImporter.h" />
+    <ClInclude Include="Core\Common\Camera.h" />
+    <ClInclude Include="Core\Common\CD3DX12.h" />
+    <ClInclude Include="Core\Common\D3DDeviceResources.h" />
+    <ClInclude Include="Core\Common\FileManager.h" />
+    <ClInclude Include="Core\Common\FrameResource.h" />
+    <ClInclude Include="Core\Common\GeometryManager.h" />
+    <ClInclude Include="Core\Common\InputManager.h" />
+    <ClInclude Include="Core\Common\Interface\IDeviceResources.h" />
+    <ClInclude Include="Core\Common\Interface\IGeoImporter.h" />
+    <ClInclude Include="Core\Common\Interface\IObject.h" />
+    <ClInclude Include="Core\Common\Interface\IScene.h" />
+    <ClInclude Include="Core\Common\Interface\ITickObject.h" />
+    <ClInclude Include="Core\Common\Platform.h" />
+    <ClInclude Include="Core\Common\Scene.h" />
+    <ClInclude Include="Core\Common\SmartPtr.h" />
+    <ClInclude Include="Core\Common\StringManager.h" />
+    <ClInclude Include="Core\Common\ThreadManager.h" />
+    <ClInclude Include="Core\Common\TimerManager.h" />
+    <ClInclude Include="Core\Common\TypeDef.h" />
+    <ClInclude Include="Core\Common\UploadBuffer.h" />
+    <ClInclude Include="Core\Common\Utility.h" />
+    <ClInclude Include="Core\ImGui\imconfig.h" />
+    <ClInclude Include="Core\ImGui\imgui.h" />
+    <ClInclude Include="Core\ImGui\imgui_internal.h" />
+    <ClInclude Include="Core\ImGui\impl\imgui_impl_dx12.h" />
+    <ClInclude Include="Core\ImGui\impl\imgui_impl_win32.h" />
+    <ClInclude Include="Core\ImGui\nothings_stb\imstb_rectpack.h" />
+    <ClInclude Include="Core\ImGui\nothings_stb\imstb_textedit.h" />
+    <ClInclude Include="Core\ImGui\nothings_stb\imstb_truetype.h" />
+    <ClInclude Include="Core\JayouEngine.h" />
+    <ClInclude Include="Core\Math\BoundingPlane.h" />
+    <ClInclude Include="Core\Math\BoundingSphere.h" />
+    <ClInclude Include="Core\Math\Common.h" />
+    <ClInclude Include="Core\Math\Frustum.h" />
+    <ClInclude Include="Core\Math\Math.h" />
+    <ClInclude Include="Core\Math\Matrix3.h" />
+    <ClInclude Include="Core\Math\Matrix4.h" />
+    <ClInclude Include="Core\Math\Quaternion.h" />
+    <ClInclude Include="Core\Math\Random.h" />
+    <ClInclude Include="Core\Math\Scalar.h" />
+    <ClInclude Include="Core\Math\Transform.h" />
+    <ClInclude Include="Core\Math\Vector.h" />
+  </ItemGroup>
+  <ItemGroup>
+    <ClCompile Include="Core\Common\AssimpImporter.cpp" />
+    <ClCompile Include="Core\Common\Camera.cpp" />
+    <ClCompile Include="Core\Common\D3DDeviceResources.cpp" />
+    <ClCompile Include="Core\Common\FileManager.cpp" />
+    <ClCompile Include="Core\Common\GeometryManager.cpp" />
+    <ClCompile Include="Core\Common\InputManager.cpp" />
+    <ClCompile Include="Core\Common\Scene.cpp" />
+    <ClCompile Include="Core\Common\StringManager.cpp" />
+    <ClCompile Include="Core\Common\ThreadManager.cpp" />
+    <ClCompile Include="Core\Common\TimerManager.cpp" />
+    <ClCompile Include="Core\Common\Utility.cpp" />
+    <ClCompile Include="Core\ImGui\imgui.cpp" />
+    <ClCompile Include="Core\ImGui\imgui_demo.cpp" />
+    <ClCompile Include="Core\ImGui\imgui_draw.cpp" />
+    <ClCompile Include="Core\ImGui\imgui_widgets.cpp" />
+    <ClCompile Include="Core\ImGui\impl\imgui_impl_dx12.cpp" />
+    <ClCompile Include="Core\ImGui\impl\imgui_impl_win32.cpp" />
+    <ClCompile Include="Core\JayouEngine.cpp" />
+    <ClCompile Include="Core\Math\Frustum.cpp" />
+    <ClCompile Include="Core\Math\Random.cpp" />
+    <ClCompile Include="DLLMain.cpp" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Core\Shaders\common.hlsl">
+      <FileType>Document</FileType>
+    </None>
+    <None Include="Core\Shaders\computemax.hlsl">
+      <FileType>Document</FileType>
+    </None>
+    <None Include="Core\Shaders\fullscreenquad.hlsl">
+      <FileType>Document</FileType>
+    </None>
+  </ItemGroup>
+  <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
+  <ImportGroup Label="ExtensionTargets">
+  </ImportGroup>
+</Project>

@@ -1,0 +1,2 @@
+#define JAYOUENGINE_API __declspec(dllexport)
+#define JAYOUENGINE_API __declspec(dllimport)

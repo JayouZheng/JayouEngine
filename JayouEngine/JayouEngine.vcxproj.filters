@@ -1,0 +1,238 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <ItemGroup>
+    <None Include="cpp.hint" />
+    <None Include="Core\Math\Functions.inl">
+      <Filter>Core\Math</Filter>
+    </None>
+    <None Include="Core\Shaders\common.hlsl">
+      <Filter>Core\Shaders</Filter>
+    </None>
+    <None Include="Core\Shaders\computemax.hlsl">
+      <Filter>Core\Shaders</Filter>
+    </None>
+    <None Include="Core\Shaders\fullscreenquad.hlsl">
+      <Filter>Core\Shaders</Filter>
+    </None>
+  </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="Core\JayouEngine.h">
+      <Filter>Core</Filter>
+    </ClInclude>
+    <ClInclude Include="Core\Math\BoundingPlane.h">
+      <Filter>Core\Math</Filter>
+    </ClInclude>
+    <ClInclude Include="Core\Math\BoundingSphere.h">
+      <Filter>Core\Math</Filter>
+    </ClInclude>
+    <ClInclude Include="Core\Math\Common.h">
+      <Filter>Core\Math</Filter>
+    </ClInclude>
+    <ClInclude Include="Core\Math\Frustum.h">
+      <Filter>Core\Math</Filter>
+    </ClInclude>
+    <ClInclude Include="Core\Math\Matrix3.h">
+      <Filter>Core\Math</Filter>
+    </ClInclude>
+    <ClInclude Include="Core\Math\Matrix4.h">
+      <Filter>Core\Math</Filter>
+    </ClInclude>
+    <ClInclude Include="Core\Math\Quaternion.h">
+      <Filter>Core\Math</Filter>
+    </ClInclude>
+    <ClInclude Include="Core\Math\Random.h">
+      <Filter>Core\Math</Filter>
+    </ClInclude>
+    <ClInclude Include="Core\Math\Scalar.h">
+      <Filter>Core\Math</Filter>
+    </ClInclude>
+    <ClInclude Include="Core\Math\Transform.h">
+      <Filter>Core\Math</Filter>
+    </ClInclude>
+    <ClInclude Include="Core\Math\Vector.h">
+      <Filter>Core\Math</Filter>
+    </ClInclude>
+    <ClInclude Include="Core\Common\Camera.h">
+      <Filter>Core\Common</Filter>
+    </ClInclude>
+    <ClInclude Include="Core\Common\FileManager.h">
+      <Filter>Core\Common</Filter>
+    </ClInclude>
+    <ClInclude Include="Core\Common\FrameResource.h">
+      <Filter>Core\Common</Filter>
+    </ClInclude>
+    <ClInclude Include="Core\Common\GeometryManager.h">
+      <Filter>Core\Common</Filter>
+    </ClInclude>
+    <ClInclude Include="Core\Common\StringManager.h">
+      <Filter>Core\Common</Filter>
+    </ClInclude>
+    <ClInclude Include="Core\Common\ThreadManager.h">
+      <Filter>Core\Common</Filter>
+    </ClInclude>
+    <ClInclude Include="Core\Common\TimerManager.h">
+      <Filter>Core\Common</Filter>
+    </ClInclude>
+    <ClInclude Include="Core\Common\TypeDef.h">
+      <Filter>Core\Common</Filter>
+    </ClInclude>
+    <ClInclude Include="Core\Common\UploadBuffer.h">
+      <Filter>Core\Common</Filter>
+    </ClInclude>
+    <ClInclude Include="Core\Math\Math.h">
+      <Filter>Core\Math</Filter>
+    </ClInclude>
+    <ClInclude Include="Core\Common\Utility.h">
+      <Filter>Core\Common</Filter>
+    </ClInclude>
+    <ClInclude Include="Core\Common\Platform.h">
+      <Filter>Core\Common</Filter>
+    </ClInclude>
+    <ClInclude Include="Core\Common\D3DDeviceResources.h">
+      <Filter>Core\Common</Filter>
+    </ClInclude>
+    <ClInclude Include="Core\Common\CD3DX12.h">
+      <Filter>Core\Common</Filter>
+    </ClInclude>
+    <ClInclude Include="Core\Common\InputManager.h">
+      <Filter>Core\Common</Filter>
+    </ClInclude>
+    <ClInclude Include="Core\ImGui\imconfig.h">
+      <Filter>Core\ImGui</Filter>
+    </ClInclude>
+    <ClInclude Include="Core\ImGui\imgui.h">
+      <Filter>Core\ImGui</Filter>
+    </ClInclude>
+    <ClInclude Include="Core\ImGui\imgui_internal.h">
+      <Filter>Core\ImGui</Filter>
+    </ClInclude>
+    <ClInclude Include="Core\ImGui\impl\imgui_impl_dx12.h">
+      <Filter>Core\ImGui\impl</Filter>
+    </ClInclude>
+    <ClInclude Include="Core\ImGui\impl\imgui_impl_win32.h">
+      <Filter>Core\ImGui\impl</Filter>
+    </ClInclude>
+    <ClInclude Include="Core\ImGui\nothings_stb\imstb_rectpack.h">
+      <Filter>Core\ImGui\nothings_stb</Filter>
+    </ClInclude>
+    <ClInclude Include="Core\ImGui\nothings_stb\imstb_textedit.h">
+      <Filter>Core\ImGui\nothings_stb</Filter>
+    </ClInclude>
+    <ClInclude Include="Core\ImGui\nothings_stb\imstb_truetype.h">
+      <Filter>Core\ImGui\nothings_stb</Filter>
+    </ClInclude>
+    <ClInclude Include="Core\Common\Interface\IDeviceResources.h">
+      <Filter>Core\Common\Interface</Filter>
+    </ClInclude>
+    <ClInclude Include="Core\Common\SmartPtr.h">
+      <Filter>Core\Common</Filter>
+    </ClInclude>
+    <ClInclude Include="Core\Common\Scene.h">
+      <Filter>Core\Common</Filter>
+    </ClInclude>
+    <ClInclude Include="Core\Common\AssimpImporter.h">
+      <Filter>Core\Common</Filter>
+    </ClInclude>
+    <ClInclude Include="Core\Common\Interface\ITickObject.h">
+      <Filter>Core\Common\Interface</Filter>
+    </ClInclude>
+    <ClInclude Include="Core\Common\Interface\IGeoImporter.h">
+      <Filter>Core\Common\Interface</Filter>
+    </ClInclude>
+    <ClInclude Include="Core\Common\Interface\IScene.h">
+      <Filter>Core\Common\Interface</Filter>
+    </ClInclude>
+    <ClInclude Include="Core\Common\Interface\IObject.h">
+      <Filter>Core\Common\Interface</Filter>
+    </ClInclude>
+  </ItemGroup>
+  <ItemGroup>
+    <ClCompile Include="Core\JayouEngine.cpp">
+      <Filter>Core</Filter>
+    </ClCompile>
+    <ClCompile Include="Core\Math\Frustum.cpp">
+      <Filter>Core\Math</Filter>
+    </ClCompile>
+    <ClCompile Include="Core\Math\Random.cpp">
+      <Filter>Core\Math</Filter>
+    </ClCompile>
+    <ClCompile Include="Core\Common\Camera.cpp">
+      <Filter>Core\Common</Filter>
+    </ClCompile>
+    <ClCompile Include="Core\Common\FileManager.cpp">
+      <Filter>Core\Common</Filter>
+    </ClCompile>
+    <ClCompile Include="Core\Common\GeometryManager.cpp">
+      <Filter>Core\Common</Filter>
+    </ClCompile>
+    <ClCompile Include="Core\Common\StringManager.cpp">
+      <Filter>Core\Common</Filter>
+    </ClCompile>
+    <ClCompile Include="Core\Common\ThreadManager.cpp">
+      <Filter>Core\Common</Filter>
+    </ClCompile>
+    <ClCompile Include="Core\Common\TimerManager.cpp">
+      <Filter>Core\Common</Filter>
+    </ClCompile>
+    <ClCompile Include="Core\Common\Utility.cpp">
+      <Filter>Core\Common</Filter>
+    </ClCompile>
+    <ClCompile Include="DLLMain.cpp" />
+    <ClCompile Include="Core\Common\D3DDeviceResources.cpp">
+      <Filter>Core\Common</Filter>
+    </ClCompile>
+    <ClCompile Include="Core\Common\InputManager.cpp">
+      <Filter>Core\Common</Filter>
+    </ClCompile>
+    <ClCompile Include="Core\ImGui\imgui.cpp">
+      <Filter>Core\ImGui</Filter>
+    </ClCompile>
+    <ClCompile Include="Core\ImGui\imgui_demo.cpp">
+      <Filter>Core\ImGui</Filter>
+    </ClCompile>
+    <ClCompile Include="Core\ImGui\imgui_draw.cpp">
+      <Filter>Core\ImGui</Filter>
+    </ClCompile>
+    <ClCompile Include="Core\ImGui\imgui_widgets.cpp">
+      <Filter>Core\ImGui</Filter>
+    </ClCompile>
+    <ClCompile Include="Core\ImGui\impl\imgui_impl_dx12.cpp">
+      <Filter>Core\ImGui\impl</Filter>
+    </ClCompile>
+    <ClCompile Include="Core\ImGui\impl\imgui_impl_win32.cpp">
+      <Filter>Core\ImGui\impl</Filter>
+    </ClCompile>
+    <ClCompile Include="Core\Common\Scene.cpp">
+      <Filter>Core\Common</Filter>
+    </ClCompile>
+    <ClCompile Include="Core\Common\AssimpImporter.cpp">
+      <Filter>Core\Common</Filter>
+    </ClCompile>
+  </ItemGroup>
+  <ItemGroup>
+    <Filter Include="Core">
+      <UniqueIdentifier>{11ced5c2-cd33-495b-b5ac-278528baceca}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Core\Math">
+      <UniqueIdentifier>{cd6491c9-5769-42dc-b203-9eb05b530d5d}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Core\Common">
+      <UniqueIdentifier>{700a5078-753d-481b-b650-98dd730a4ea1}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Core\ImGui">
+      <UniqueIdentifier>{e2cd3872-8a86-4f6c-9e55-562605edd20f}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Core\ImGui\nothings_stb">
+      <UniqueIdentifier>{9f65a1b3-a9f1-491e-bece-5b46ff27fe8b}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Core\ImGui\impl">
+      <UniqueIdentifier>{7da6bc04-b098-49af-aa8a-9ea6b4bb517b}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Core\Shaders">
+      <UniqueIdentifier>{e1a3a146-dfb6-44f2-9b4c-dd6c3833a862}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Core\Common\Interface">
+      <UniqueIdentifier>{1e645573-7643-47cb-8ee4-8abf2fbc37ea}</UniqueIdentifier>
+    </Filter>
+  </ItemGroup>
+</Project>

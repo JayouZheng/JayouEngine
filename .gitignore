@@ -1,0 +1,14 @@
+# Build and Release Folders
+x64/
+Debug/
+Release/
+
+# Other files and folders
+.vs/
+assimp-5.0.1/
+
+# Executables
+
+# Project files, i.e. `.project`, `.actionScriptProperties` and `.flexProperties`
+# should NOT be excluded as they contain compiler settings and other important
+# information for Eclipse / Flash Builder.
