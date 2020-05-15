@@ -186,7 +186,9 @@ void Camera::SetDirLightFrustum(float radius)
 {
 	// Transform bounding sphere to light space.
 	XMFLOAT3 sphereCenterLS;
-	XMStoreFloat3(&sphereCenterLS, XMVector3TransformCoord(GetPosition(), GetView()));
+	XMFLOAT3 Center = XMFLOAT3(0.0f, 0.0f, 0.0f);
+	XMVECTOR targetPos = XMLoadFloat3(&Center);
+	XMStoreFloat3(&sphereCenterLS, XMVector3TransformCoord(targetPos, GetView()));
 
 	// Ortho frustum in light space encloses scene.
 	float l = sphereCenterLS.x - radius;
@@ -251,6 +253,7 @@ void Camera::LookAt(const XMFLOAT3& pos, const XMFLOAT3& target, const XMFLOAT3&
 
 void Camera::DirLightLookAt(const XMVECTOR& pos, const XMVECTOR& target, const XMVECTOR& up)
 {
+	LookAt(pos, target, up);
 	XMStoreFloat4x4(&m_view, XMMatrixLookAtLH(pos, target, up));
 }
 
@@ -490,6 +493,7 @@ void Camera::UpdateViewMatrix()
 		default:
 			break;
 		}
+		XMStoreFloat3(&m_pos, P);
 
 		// Keep camera's axes orthogonal to each other and of unit length.
 		L = XMVector3Normalize(L);

@@ -54,7 +54,7 @@ void AppEntry::PreInitialize(HWND window, int width, int height, std::wstring cm
 	m_timer = std::make_unique<BaseTimer>();
 	m_camera = std::make_unique<Camera>();
 	m_dirLightCamera = std::make_unique<Camera>();
-	m_shadowMap = std::make_unique<ShadowMap>(m_deviceResources->GetD3DDevice(), 2048, 2048);
+	m_shadowMap = std::make_unique<ShadowMap>(m_deviceResources->GetD3DDevice(), 4096, 4096);
 	// Now I Do Not Want to Use it!!!
 	// m_cubeMap = std::make_unique<CubeMap>(m_deviceResources->GetD3DDevice(), m_cubeMapSize, m_cubeMapSize, DXGI_FORMAT_R8G8B8A8_UNORM, 6, 1);
 
@@ -77,13 +77,6 @@ void AppEntry::Initialize(HWND window, int width, int height, std::wstring cmdLi
 	// Main Camera Init.
 	m_camera->SetPosition(0.0f, 8.0f, -25.0f);
 	m_camera->SetFrustum(0.25f*XM_PI, m_width, m_height, 1.0f, 2000.0f);
-
-	// Init DirLight Cast Shadow Camera.
-	if (!m_allLightRefs.empty() && m_allLightRefs[0]->LightType == LT_Directional)
-	{
-		// Define Proj.
-		m_dirLightCamera->SetDirLightFrustum(m_appGui->GetAppData()->SceneRadius > 10.0f ? m_appGui->GetAppData()->SceneRadius : 10.0f);
-	}
 }
 
 #pragma region Frame Update
@@ -103,6 +96,7 @@ void AppEntry::Tick()
 	m_currFrameResourceIndex = (m_currFrameResourceIndex + 1) % m_deviceResources->GetBackBufferCount();
 	m_currFrameResource = m_frameResources[m_currFrameResourceIndex].get();
 	
+	UpdateCamera();
 	UpdatePerObjectCB();
 	UpdateMainPassCB();
 	UpdateShadowPassCB();
@@ -118,7 +112,6 @@ void AppEntry::Update(const BaseTimer& timer)
     PIXBeginEvent(PIX_COLOR_DEFAULT, L"Update");
 
 	ResponseToGUIOptionChanged();
-	UpdateCamera();
 	
     PIXEndEvent();
 }
@@ -320,12 +313,15 @@ void AppEntry::UpdateCamera()
 		// Only the first "main" light casts a shadow.
 		XMVECTOR lightDir = XMLoadFloat3(&m_allLightRefs[0]->Direction);
 		lightDir = XMVector3Normalize(lightDir);
-		XMVECTOR lightPos = -2.0f*(m_appGui->GetAppData()->SceneRadius > 10.0f ? m_appGui->GetAppData()->SceneRadius : 10.0f)*lightDir;
-		XMVECTOR targetPos = Vector3(0.0f,0.0f,0.0f);
+		XMVECTOR lightPos = -2.0f*lightDir*(m_appGui->GetAppData()->SceneRadius > 10.0f ? m_appGui->GetAppData()->SceneRadius : 10.0f);
+		XMFLOAT3 Center = XMFLOAT3(0.0f, 0.0f, 0.0f);
+		XMVECTOR targetPos = XMLoadFloat3(&Center);
 		XMVECTOR lightUp = XMVectorSet(0.0f, 1.0f, 0.0f, 0.0f);
 
 		// Define View Space.
 		m_dirLightCamera->DirLightLookAt(lightPos, targetPos, lightUp);
+		// Define Proj.
+		m_dirLightCamera->SetDirLightFrustum(m_appGui->GetAppData()->SceneRadius > 10.0f ? m_appGui->GetAppData()->SceneRadius : 10.0f);
 	}
 }
 

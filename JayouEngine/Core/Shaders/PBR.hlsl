@@ -25,20 +25,20 @@ VertexOut VS(uint vid : SV_VertexID)
 }
 
 float4 PS(VertexOut pin) : SV_Target
-{  
+{
     LightingInfo info;
     
     int3 location3 = int3(pin.PosH.xy, 0);
     float depth = gGBuffers[0].Load(location3).r;
-    clip(0.999f - depth);
+    // clip(0.999f - depth);
     
     // Calc Pos From Depth, Bug Left!!!
     // float linearDepth = ConvertDepthToLinear(gProj, depth);
     // info.Position = CalcWorldPosFromLinearDepth(gProj, gInvView, pin.NDCPos, linearDepth);
        
     info.Diffuse = gGBuffers[2].Load(location3).rgb;
-    info.Normal = gGBuffers[3].Load(location3).rgb;  
-    info.Normal = normalize(info.Normal * 2.0f - 1.0f); 
+    info.Normal = gGBuffers[3].Load(location3).rgb;
+    info.Normal = normalize(info.Normal * 2.0f - 1.0f);
     float3 ORM = gGBuffers[4].Load(location3).rgb;
     info.Position = gGBuffers[5].Load(location3).rgb;
     float AO = ORM.r;
@@ -75,20 +75,22 @@ float4 PS(VertexOut pin) : SV_Target
     
     color += AO * gAmbientFactor.rgb * info.Diffuse;
     
-    // Add in specular reflections.
-    float3 r = reflect(-info.toEye, info.Normal);
-    r.y = -r.y;
-    float2 uv = SampleSphericalMap(normalize(r)); // make sure to normalize localPos
-    float3 reflectionColor = gTextures[gCubeMapIndex].Sample(gsamAnisotropicWrap, uv).rgb;
+    if (gCubeMapIndex != -1)
+    {
+         // Add in specular reflections.
+        float3 r = reflect(-info.toEye, info.Normal);
+        r.y = -r.y;
+        float2 uv = SampleSphericalMap(normalize(r)); // make sure to normalize localPos
+        float3 reflectionColor = gTextures[gCubeMapIndex].Sample(gsamAnisotropicWrap, uv).rgb;
         
-    float3 F0 = 0.04f;
-    F0 = lerp(F0, info.Diffuse, info.Metallicity);
-    float3 halfVector = normalize(r + info.toEye);
-    float HdotV = max(dot(halfVector, info.toEye), 0.0f);
-    float3 fresnelFactor = Fresnel_Epic(F0, HdotV);
+        float3 F0 = 0.04f;
+        F0 = lerp(F0, info.Diffuse, info.Metallicity);
+        float3 halfVector = normalize(r + info.toEye);
+        float HdotV = max(dot(halfVector, info.toEye), 0.0f);
+        float3 fresnelFactor = Fresnel_Epic(F0, HdotV);
         
-    color += (1.0f - info.Roughness) * fresnelFactor * reflectionColor.rgb;
-    
+        color += (1.0f - info.Roughness) * fresnelFactor * reflectionColor.rgb;
+    }  
         
     // HDR to LDR (saturate because float near 1.0f may be overflow).
     // * 1.0f is a curve control value.

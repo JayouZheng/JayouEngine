@@ -678,7 +678,7 @@ void AppGUI::MenuOption()
 			ImGui::Separator();
 			ImGui::ColorEdit3(u8"背景色", (float*)&m_appData->ClearColor); // Edit 3 floats representing a color	
 			ImGui::ColorEdit3(u8"环境光强系数", (float*)&m_appData->AmbientFactor);
-			ImGui::DragFloat(u8"场景阴影半径", &m_appData->SceneRadius, 1.0f, 10.0f, 100.0f);
+			ImGui::DragFloat(u8"场景阴影半径", &m_appData->SceneRadius, 1.0f, 10.0f, 1000.0f);
 			ImGui::Checkbox(u8"显示天空球", &m_appData->bShowSkySphere);
 			if (m_appData->bShowSkySphere)
 			{
@@ -1131,8 +1131,6 @@ void AppGUI::WorldOutliner()
 					lit->Position = XMFLOAT3(AffineTransform(lit->World).GetTranslation());
 					lit->Direction = XMFLOAT3(Vector3(lit->World.Get3x3()*dirCache));
 					lit->MarkAsDirty();
-
-					ImGui::DragFloat3(u8"Dir", (float*)&lit->Direction, 1.0f, -360.0f, 360.f);
 
 					break;
 				}

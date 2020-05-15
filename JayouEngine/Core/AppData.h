@@ -23,7 +23,7 @@ namespace Core
 	struct AppData
 	{
 		// Scene.
-		float SceneRadius = 40.0f;
+		float SceneRadius = 250.0f;
 		int32 CubeMapIndex = -1;
 		float WalkSpeed = 50.0f;
 
