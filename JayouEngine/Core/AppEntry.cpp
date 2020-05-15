@@ -630,8 +630,6 @@ void AppEntry::OnWindowSizeChanged(int width, int height)
 
 	// OnWindowSizeChanged.
 	m_camera->SetFrustum(0.25f*XM_PI, m_width, m_height, 1.0f, 2000.0f);
-
-	m_shadowMap->OnResize(width, height);
 }
 
 void AppEntry::OnMouseDown(WPARAM btnState, int x, int y)
