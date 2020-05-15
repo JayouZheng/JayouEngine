@@ -1,10 +1,12 @@
 //
-// UploadBuffer.cpp
+// UploadBuffer.h
 //
 
 #pragma once
 
 #include "Utility.h"
+
+using namespace WinUtility;
 
 namespace D3DCore
 {
@@ -26,7 +28,7 @@ namespace D3DCore
 			// UINT   SizeInBytes;   // multiple of 256
 			// } D3D12_CONSTANT_BUFFER_VIEW_DESC;
 			if (isConstantBuffer)
-				mElementByteSize = Core::Utility::CalcConstantBufferByteSize(sizeof(T));
+				mElementByteSize = Utility::CalcConstantBufferByteSize(sizeof(T));
 
 			ThrowIfFailedV1(device->CreateCommittedResource(
 				&CD3DX12_HEAP_PROPERTIES(D3D12_HEAP_TYPE_UPLOAD),

@@ -4,9 +4,9 @@
 
 #pragma once
 
-#include <fstream>
 #include "TypeDef.h"
 
+#include <fstream>
 // The Common Item Dialog implements an interface named IFileOpenDialog, 
 // which is declared in the header file Shobjidl.h.
 #include <shobjidl.h>
@@ -15,7 +15,55 @@
 namespace WinUtility
 {
 	namespace FileManager
-	{
+	{	
+		enum ESupportFileType
+		{
+			SF_JayouEngine,
+			SF_AssimpModel,
+			SF_StdImage,
+			SF_Unknown
+		};
+
+		const std::unordered_map<ESupportFileType, std::wstring> SupportFileTypeTable = 
+		{
+			{ SF_JayouEngine, L"*.jayou;*.jscene" },
+			{ SF_AssimpModel, L"*.fbx;*.obj;*.3D;*.3DS;*.3MF;*.AC;*.AC3D;*.ACC;*.AMJ;*.ASE;*.ASK;*.B3D;*.BLEND \
+				*.BVH;*.CMS;*.COB;*.DAE;*.DXF;*.ENFF;*.glTF;*.glTF;*.HMB;*.IFC-STEP;*.IRR;*.LWO;*.LWS;*.LXO    \
+				*.M3D;*.MD2;*.MD3;*.MD5;*.MDC;*.MDL;*.MESH;*.MOT;*.MS3D;*.NDO;*.NFF;*.OFF;*.OGEX;*.PLY;*.PMX   \
+				*.PRJ;*.Q3O;*.Q3S;*.RAW;*.SCN;*.SIB;*.SMD;*.STP;*.STL;*.TER;*.UC;*.VTA;*.X;*.X3D;*.XGL;*.ZGL" },
+			{ SF_StdImage,    L"*.png;*.jpg;*.jpeg;*.tga;*.bmp;*.psd;*.gif;*.hdr;*.pic;*.pnm;*.ppm;*.pgm" },
+		};
+
+		const std::vector<COMDLG_FILTERSPEC> DefaultFilter =
+		{
+			{ L"JayouEngine", L"*.jayou;*.jscene" },
+			{ L"Model1", L"*.fbx;*.obj;*.3D;*.3DS;*.3MF;*.AC;*.AC3D;*.ACC;*.AMJ;*.ASE;*.ASK;*.B3D;*.BLEND" },
+			{ L"Model2", L"*.BVH;*.CMS;*.COB;*.DAE;*.DXF;*.ENFF;*.glTF;*.glTF;*.HMB;*.IFC-STEP;*.IRR;*.LWO;*.LWS;*.LXO" },
+			{ L"Model3", L"*.M3D;*.MD2;*.MD3;*.MD5;*.MDC;*.MDL;*.MESH;*.MOT;*.MS3D;*.NDO;*.NFF;*.OFF;*.OGEX;*.PLY;*.PMX" },
+			{ L"Model4", L"*.PRJ;*.Q3O;*.Q3S;*.RAW;*.SCN;*.SIB;*.SMD;*.STP;*.STL;*.TER;*.UC;*.VTA;*.X;*.X3D;*.XGL;*.ZGL" },
+			{ L"Image", L"*.png;*.jpg;*.jpeg;*.tga;*.bmp;*.psd;*.gif;*.hdr;*.pic;*.pnm;*.ppm;*.pgm" },
+			{ L"All", L"*.*" }
+		};
+
+		class FileUtil
+		{
+		public:
+	
+			// OpenDialog.
+			static bool OpenDialogBox(HWND InOwner, std::vector<std::wstring>& OutPaths, DWORD InOptions, const std::vector<COMDLG_FILTERSPEC>& InFilters = DefaultFilter);
+
+			static void GetAllFilesUnder(std::string path, std::vector<std::string>& files, std::string format = "");		
+
+			static void WGetAllFilesUnder(std::wstring path, std::vector<std::wstring>& files, std::wstring format = L"");			
+			
+			static void GetFileTypeFromPathW(const std::wstring& InPath, ESupportFileType& OutType);
+
+			static void GetFileTypeFromExtW(const std::wstring& InExten, ESupportFileType& OutType);
+
+			static void GetPathMapFileTypeFromPathW(const std::vector<std::wstring>& InPaths, std::unordered_map<std::wstring, ESupportFileType>& OutPathMapType);
+			
+		};
+
 		template<typename TCHAR = char>
 		class FileStream;
 
@@ -64,24 +112,11 @@ namespace WinUtility
 				if (_fstream.fail())
 				{
 				}
-			}		
+			}
 
 		private:
 
 			_file_stream _fstream;
-		};
-
-		class FileUtil
-		{
-		public:
-
-			// OpenDialog.
-			static bool OpenDialogBox(HWND owner, std::wstring& wfile_path, DWORD options);
-
-			static void GetAllFilesUnder(std::string path, std::vector<std::string>& files, std::string format = "");		
-
-			static void WGetAllFilesUnder(std::wstring path, std::vector<std::wstring>& files, std::wstring format = L"");			
-			
 		};
 	}
 }

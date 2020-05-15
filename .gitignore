@@ -2,13 +2,14 @@
 x64/
 Debug/
 Release/
+Texture/
 
 # Other files and folders
 .vs/
-assimp-5.0.1/
 
 # Executables
 *.zip
+*.fbx
 *.zip.baiduyun.uploading.cfg
 
 # Project files, i.e. `.project`, `.actionScriptProperties` and `.flexProperties`

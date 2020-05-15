@@ -12,6 +12,8 @@ namespace Core
 	{
 	public:
 
+		Scene_Impl();
 
+		virtual void Add(IObject*) override;
 	};
 }

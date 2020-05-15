@@ -5,13 +5,24 @@
     <None Include="Core\Math\Functions.inl">
       <Filter>Core\Math</Filter>
     </None>
-    <None Include="Core\Shaders\common.hlsl">
+    <None Include="Core\Shaders\VertexColor.hlsl">
       <Filter>Core\Shaders</Filter>
     </None>
-    <None Include="Core\Shaders\computemax.hlsl">
+    <None Include="Core\Shaders\FullscreenQuad.hlsl">
       <Filter>Core\Shaders</Filter>
     </None>
-    <None Include="Core\Shaders\fullscreenquad.hlsl">
+    <None Include="Core\Shaders\Common.hlsl">
+      <Filter>Core\Shaders</Filter>
+    </None>
+    <None Include="Core\Shaders\LightingUtil.hlsl">
+      <Filter>Core\Shaders</Filter>
+    </None>
+    <None Include="Core\Shaders\GBuffer.hlsl">
+      <Filter>Core\Shaders</Filter>
+    </None>
+    <None Include="Core\Shaders\Shadow.hlsl" />
+    <None Include="Core\Shaders\SkySphere.hlsl" />
+    <None Include="Core\Shaders\PBR.hlsl">
       <Filter>Core\Shaders</Filter>
     </None>
   </ItemGroup>
@@ -145,6 +156,30 @@
     <ClInclude Include="Core\Common\Interface\IObject.h">
       <Filter>Core\Common\Interface</Filter>
     </ClInclude>
+    <ClInclude Include="Core\AppData.h">
+      <Filter>Core</Filter>
+    </ClInclude>
+    <ClInclude Include="Core\AppEntry.h">
+      <Filter>Core</Filter>
+    </ClInclude>
+    <ClInclude Include="Core\AppGUI.h">
+      <Filter>Core</Filter>
+    </ClInclude>
+    <ClInclude Include="Core\Common\TextureImporter.h">
+      <Filter>Core\Common</Filter>
+    </ClInclude>
+    <ClInclude Include="Core\StdImage\stb_image.h">
+      <Filter>Core\StdImage</Filter>
+    </ClInclude>
+    <ClInclude Include="Core\ImGui\ImGuizmo.h">
+      <Filter>Core\ImGui</Filter>
+    </ClInclude>
+    <ClInclude Include="Core\Common\ShadowMap.h">
+      <Filter>Core\Common</Filter>
+    </ClInclude>
+    <ClInclude Include="Core\Common\CubeMap.h">
+      <Filter>Core\Common</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="Core\JayouEngine.cpp">
@@ -208,6 +243,27 @@
     <ClCompile Include="Core\Common\AssimpImporter.cpp">
       <Filter>Core\Common</Filter>
     </ClCompile>
+    <ClCompile Include="Core\AppEntry.cpp">
+      <Filter>Core</Filter>
+    </ClCompile>
+    <ClCompile Include="Core\AppGUI.cpp">
+      <Filter>Core</Filter>
+    </ClCompile>
+    <ClCompile Include="Core\Common\TextureImporter.cpp">
+      <Filter>Core\Common</Filter>
+    </ClCompile>
+    <ClCompile Include="Core\ImGui\ImGuizmo.cpp">
+      <Filter>Core\ImGui</Filter>
+    </ClCompile>
+    <ClCompile Include="Core\Common\FrameResource.cpp">
+      <Filter>Core\Common</Filter>
+    </ClCompile>
+    <ClCompile Include="Core\Common\ShadowMap.cpp">
+      <Filter>Core\Common</Filter>
+    </ClCompile>
+    <ClCompile Include="Core\Common\CubeMap.cpp">
+      <Filter>Core\Common</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <Filter Include="Core">
@@ -234,5 +290,11 @@
     <Filter Include="Core\Common\Interface">
       <UniqueIdentifier>{1e645573-7643-47cb-8ee4-8abf2fbc37ea}</UniqueIdentifier>
     </Filter>
+    <Filter Include="Core\StdImage">
+      <UniqueIdentifier>{3a980045-5f86-4499-86e1-89bbc3182ec6}</UniqueIdentifier>
+    </Filter>
+  </ItemGroup>
+  <ItemGroup>
+    <ResourceCompile Include="resource.rc" />
   </ItemGroup>
 </Project>

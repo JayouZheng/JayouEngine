@@ -30,6 +30,11 @@ public:
 	virtual void Init(const EngineInitParams&) = 0;
 	virtual IScene* GetScene() = 0;
 	virtual IGeoImporter* GetAssimpImporter() = 0;
+
+	// This will be deprecated in the future engine version.
+	virtual void Run() = 0;
+
+	virtual ~IJayouEngine() {}
 };
 
 
@@ -72,7 +77,7 @@ public:
 	{
 		// Enable run-time memory check for debug builds.
 #if defined(DEBUG) | defined(_DEBUG)
-		_CrtSetDbgFlag(_CRTDBG_ALLOC_MEM_DF | _CRTDBG_LEAK_CHECK_DF);
+		_CrtSetDbgFlag(_CRTDBG_LEAK_CHECK_DF | _CRTDBG_ALLOC_MEM_DF);
 #endif
 
 		m_hinstLib = LoadLibrary(TEXT("JayouEngine.dll"));
@@ -103,6 +108,20 @@ public:
 	}
 
 protected:
+
+
+	void detect_memory_leaks(bool on_off)
+	{
+		int flags = _CrtSetDbgFlag(_CRTDBG_REPORT_FLAG);
+		if (!on_off)
+			flags &= ~_CRTDBG_LEAK_CHECK_DF;
+		else {
+			flags |= _CRTDBG_LEAK_CHECK_DF | _CRTDBG_ALLOC_MEM_DF;
+			_CrtSetReportMode(_CRT_WARN, _CRTDBG_MODE_FILE);
+			_CrtSetReportFile(_CRT_WARN, _CRTDBG_FILE_STDOUT);
+		}
+		_CrtSetDbgFlag(flags);
+	}
 
 	std::queue<std::string> m_errorString;
 

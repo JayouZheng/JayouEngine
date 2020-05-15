@@ -2,75 +2,74 @@
 // FileManager.cpp
 //
 
+#include "Utility.h"
 #include "FileManager.h"
+#include "StringManager.h"
+
 #include <io.h>
 
+#define success_if(x) if (SUCCEEDED(x))
+
+using namespace WinUtility;
 using namespace WinUtility::FileManager;
+using namespace Utility::StringManager;
 
-bool FileUtil::OpenDialogBox(HWND owner, std::wstring& wfile_path, DWORD options)
+bool FileUtil::OpenDialogBox(HWND InOwner, std::vector<std::wstring>& OutPaths, DWORD InOptions, const std::vector<COMDLG_FILTERSPEC>& InFilters)
 {
-	wfile_path = L"404 Not Found.";
-	HRESULT hr;
-	bool result = true;
-
 	////////////////////////////////
 	/* Comments ////////////////////
-	
-	hr = CoInitializeEx(NULL, COINIT_APARTMENTTHREADED |
-		COINIT_DISABLE_OLE1DDE);
-	ThrowIfFailedV2(hr);
-	if (SUCCEEDED(hr))
-	{
-		CoUninitialize();
-	}
+
+	Com Init version_1.
+	RoInitializeWrapper initialize(RO_INIT_SINGLETHREADED);
+
+	Com Init version_2.
+	CoInitializeEx(NULL, COINIT_APARTMENTTHREADED | COINIT_DISABLE_OLE1DDE);
+	CoUninitialize();
 
 	*/ /////////////////////////////
-	////////////////////////////////	
+	////////////////////////////////
 
-	IFileOpenDialog *pFileOpen;
+	ComPtr<IFileOpenDialog> fileOpenDialog = nullptr;
+	ComPtr<IShellItemArray> shellItemArray = nullptr;
+	PWSTR                   pszFilePath;
+	bool                    result = false;
 
-	// Create the FileOpenDialog object.
-	hr = CoCreateInstance(CLSID_FileOpenDialog, NULL, CLSCTX_ALL,
-		IID_IFileOpenDialog, reinterpret_cast<void**>(&pFileOpen));
-
-	if (SUCCEEDED(hr))
+	success_if(CoCreateInstance(CLSID_FileOpenDialog, NULL, CLSCTX_ALL,
+		IID_PPV_ARGS(&fileOpenDialog)))
 	{
-		// Set Options.
-		hr = pFileOpen->SetOptions(options);
-		if (SUCCEEDED(hr))
+		success_if(fileOpenDialog->SetOptions(InOptions))
 		{
-			// Show the Open dialog box.
-			hr = pFileOpen->Show(owner);
-
-			// Get the file name from the dialog box.
-			if (SUCCEEDED(hr))
+			if (!(InOptions & FOS_PICKFOLDERS) && !InFilters.empty())
 			{
-				IShellItem *pItem;
-				hr = pFileOpen->GetResult(&pItem);
-				if (SUCCEEDED(hr))
-				{
-					PWSTR pszFilePath;
-					hr = pItem->GetDisplayName(SIGDN_FILESYSPATH, &pszFilePath);
-
-					// Display the file name to the user.
-					if (SUCCEEDED(hr))
-					{
-						wfile_path = std::wstring(pszFilePath);
-						// MessageBox(NULL, pszFilePath, L"File Path", MB_OK);
-						CoTaskMemFree(pszFilePath);
-					}
-					else result = false;
-					pItem->Release();
-				}
-				else result = false;
+				ThrowIfFailedV1(fileOpenDialog->SetFileTypes((UINT)InFilters.size(), InFilters.data()));
 			}
-			else result = false;
-			pFileOpen->Release();
-		}
-		else result = false;		
-	}
-	else result = false;
 
+			success_if(fileOpenDialog->Show(InOwner))
+			{
+				success_if(fileOpenDialog->GetResults(&shellItemArray))
+				{
+					DWORD numSelected;
+					DWORD index;
+					ThrowIfFailedV1(shellItemArray->GetCount(&numSelected));
+					for (index = 0; index < numSelected; ++index)
+					{
+						ComPtr<IShellItem> shellItem;
+						ThrowIfFailedV1(shellItemArray->GetItemAt(index, &shellItem));
+
+						success_if(shellItem->GetDisplayName(SIGDN_FILESYSPATH, &pszFilePath))
+						{
+							OutPaths.push_back(std::wstring(pszFilePath));
+							CoTaskMemFree(pszFilePath);
+						}
+					}
+					if (index == numSelected)
+					{
+						result = true;
+					}
+				}
+			}
+		}
+	}
 	return result;
 }
 
@@ -125,5 +124,57 @@ void FileUtil::WGetAllFilesUnder(std::wstring path, std::vector<std::wstring>& f
 			}
 		} while (_wfindnext(file, &file_info) == 0);
 		_findclose(file);
+	}
+}
+
+void FileUtil::GetFileTypeFromPathW(const std::wstring& InPath, ESupportFileType& OutType)
+{
+	std::wstring name, exten;
+	StringUtil::SplitFileNameAndExtFromPathW(InPath, name, exten);
+	GetFileTypeFromExtW(exten, OutType);
+}
+
+void FileUtil::GetFileTypeFromExtW(const std::wstring& InExten, ESupportFileType& OutType)
+{
+	OutType = SF_Unknown;
+	for (auto row : SupportFileTypeTable)
+	{
+		ESupportFileType fileType   = row.first;
+		std::wstring     fileExtens = row.second;
+		std::wstring     findExten  = L"*." + InExten;
+		std::wstring::size_type found = fileExtens.find(findExten);
+		if (found != std::wstring::npos)
+		{
+			OutType = fileType;
+			return;
+		}
+
+		// upper.
+		std::transform(findExten.begin(), findExten.end(), findExten.begin(), ::toupper);
+		found = fileExtens.find(findExten);
+		if (found != std::wstring::npos)
+		{
+			OutType = fileType;
+			return;
+		}
+
+		// lower.
+		std::transform(findExten.begin(), findExten.end(), findExten.begin(), ::tolower);
+		found = fileExtens.find(findExten);
+		if (found != std::wstring::npos)
+		{
+			OutType = fileType;
+			return;
+		}
+	}	
+}
+
+void FileUtil::GetPathMapFileTypeFromPathW(const std::vector<std::wstring>& InPaths, std::unordered_map<std::wstring, ESupportFileType>& OutPathMapType)
+{
+	for (auto path : InPaths)
+	{
+		ESupportFileType fileType;
+		GetFileTypeFromPathW(path, fileType);
+		OutPathMapType[path] = fileType;
 	}
 }

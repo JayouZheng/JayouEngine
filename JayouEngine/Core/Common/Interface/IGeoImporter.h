@@ -6,6 +6,7 @@
 
 #include "../TypeDef.h"
 #include "../GeometryManager.h"
+
 using namespace Utility::GeometryManager;
 
 namespace Core
@@ -13,7 +14,13 @@ namespace Core
 	struct ImportGeoDesc
 	{
 		std::string  Name = "Default";
-		float        Scale = 1.0f;
+		std::string  PathName = "Default";
+
+		Vector3      Translation = { 0.0f };
+		Vector3      Rotation = { 0.0f };
+		Vector3      Scale = { 1.0f };
+
+		XMFLOAT4     Color = XMFLOAT4(Colors::Gray);
 
 		// aiPostProcessSteps
 		uint32       PPSFlags =
@@ -28,10 +35,12 @@ namespace Core
 	{
 	public:
 
-		virtual bool Import(const ImportGeoDesc& InGeoDesc, const std::string& InFile) = 0;
+		virtual bool Import(const ImportGeoDesc& InGeoDesc) = 0;
 
 		virtual Geometry GetGeometry(const std::string& InGeoName) = 0;
 
 		virtual void FreeCachedData() = 0;
+
+		virtual ~IGeoImporter() {}
 	};
 }

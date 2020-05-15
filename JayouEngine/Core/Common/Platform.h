@@ -35,6 +35,8 @@
 #include <wrl/client.h>
 #include <wrl/event.h>
 
+using Microsoft::WRL::ComPtr;
+
 #include <D3Dcompiler.h>
 
 #if defined(NTDDI_WIN10_RS2)
@@ -65,5 +67,6 @@ typedef unsigned int     size_type;
 #pragma comment(lib, "D3D12.lib")
 #pragma comment(lib, "dxgi.lib")
 #pragma comment(lib, "dxguid.lib")
+#pragma comment(lib, "runtimeobject.lib")
 
 #endif // _WINDOWS

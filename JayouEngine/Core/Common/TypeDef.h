@@ -64,24 +64,6 @@ struct Window
 
 #endif // _WINDOWS
 
-enum ECameraViewType
-{
-	CV_FirstPersonView,
-	CV_FocusPointView,
-	CV_TopView,
-	CV_BottomView,
-	CV_LeftView,
-	CV_RightView,
-	CV_FrontView,
-	CV_BackView
-};
-
-enum ECameraProjType
-{
-	CP_PerspectiveProj,
-	CP_OrthographicProj
-};
-
 enum EEngineState
 {
 	ES_Default,
@@ -102,18 +84,6 @@ struct EngineInitParams
 	EngineInitParams(EDefaultTag):
 		EngineState(ES_WithEditor)
 	{}
-};
-
-enum RenderLayer
-{
-	Opaque,
-	Transparent,
-	AlphaTested,
-	ScreenQuad,
-	Line,
-	FScene,
-	Selected,
-	Count
 };
 
 enum aiPostProcessSteps

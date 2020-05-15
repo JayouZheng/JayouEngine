@@ -10,15 +10,35 @@ using namespace Utility::StringManager;
 
 std::wstring StringUtil::StringToWString(const std::string& str)
 {
-	int num = MultiByteToWideChar(CP_UTF8, 0, str.c_str(), -1, NULL, 0);
-	wchar_t *wide = new wchar_t[num];
-	MultiByteToWideChar(CP_UTF8, 0, str.c_str(), -1, wide, num);
-	std::wstring w_str(wide);
-	delete[] wide;
-	return w_str;
+	int bufferlen = MultiByteToWideChar(CP_UTF8, 0, str.c_str(), -1, NULL, 0);
+	wchar_t* buffer = new wchar_t[bufferlen];
+	MultiByteToWideChar(CP_UTF8, 0, str.c_str(), -1, buffer, bufferlen);
+	std::wstring wstr(buffer);
+	delete[] buffer;
+	return wstr;
 }
 
 std::string StringUtil::WStringToString(const std::wstring& wstr)
+{
+	int bufferlen = WideCharToMultiByte(CP_UTF8, 0, wstr.c_str(), -1, NULL, 0, NULL, NULL);
+	char* buffer = new char[bufferlen];
+	WideCharToMultiByte(CP_UTF8, 0, wstr.c_str(), -1, buffer, bufferlen, NULL, NULL);
+	std::string str(buffer);
+	delete[] buffer;
+	return str;
+}
+
+std::wstring StringUtil::AnsiToWString(const std::string& str)
+{
+	int bufferlen = MultiByteToWideChar(CP_ACP, 0, str.c_str(), -1, NULL, 0);
+	wchar_t* buffer = new wchar_t[bufferlen];
+	MultiByteToWideChar(CP_ACP, 0, str.c_str(), -1, buffer, bufferlen);
+	std::wstring wstr(buffer);
+	delete[] buffer;
+	return wstr;
+}
+
+std::string StringUtil::WStringToStringV2(const std::wstring& wstr)
 {
 	std::setlocale(LC_ALL, "");
 	const std::locale locale("");
@@ -49,13 +69,6 @@ int32 StringUtil::WCharToInt32(wchar_t wch)
 		}
 	}
 	return result;
-}
-
-std::wstring StringUtil::AnsiToWString(const std::string& str)
-{
-	WCHAR buffer[512];
-	MultiByteToWideChar(CP_ACP, 0, str.c_str(), -1, buffer, 512);
-	return std::wstring(buffer);
 }
 
 std::vector<std::string> StringUtil::GetBetween(const std::string& str, const std::string& boundary)
@@ -266,4 +279,32 @@ std::wstring StringUtil::WFindFirstBetween(const std::wstring& wstr, const std::
 	}
 
 	return L"404 Not Found.";
+}
+
+bool StringUtil::SplitFileNameAndExtFromPathW(const std::wstring& InPath, std::wstring& OutName, std::wstring& OutExt, std::wstring* OutPath)
+{
+	std::wstring::size_type found1, found2;
+
+	found1 = InPath.find_last_of(L"/\\");
+
+	if (found1 != std::wstring::npos)
+	{
+		if (OutPath != nullptr)
+		{
+			*OutPath = InPath.substr(0, found1);
+		}
+		std::wstring file = InPath.substr(found1 + 1);
+
+		found2 = file.find_last_of(L".");
+
+		if (found2 != std::wstring::npos)
+		{
+			OutName = file.substr(0, found2);
+			OutExt  = file.substr(found2 + 1);
+
+			return true;
+		}
+		return false;
+	}
+	return false;
 }

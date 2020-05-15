@@ -57,8 +57,8 @@ D3DDeviceResources::D3DDeviceResources(
         throw std::out_of_range("minFeatureLevel too low");
     }
 
-	m_numRTVDescriptors = backBufferCount + 1 + MAX_OFFSCREEN_RTV_COUNT; // +1 Msaa RTV, +8 Offscreen RTV (Current support 8).
-	m_numDSVDescriptors = 1 + 1; // +1 Msaa DSV
+	m_numRTVDescriptors = backBufferCount + 1 + MAX_OFFSCREEN_RTV_COUNT; // +1 Msaa RTV, +8 Offscreen RTV (Current support 8). +6 CubeMap.
+	m_numDSVDescriptors = 1 + 1 + 1; // +1 Default, +1 Msaa DSV, +1 Temp New.
 }
 
 // Destructor for D3DDeviceResources.
@@ -68,6 +68,102 @@ D3DDeviceResources::~D3DDeviceResources()
     WaitForGpu();
 }
 
+// Private.
+void D3DDeviceResources::CreateRenderTargetView()
+{
+	// Obtain the back buffers for this window which will be the final render targets
+	// and create render target views for each of them.
+	for (UINT n = 0; n < m_backBufferCount; n++)
+	{
+		ThrowIfFailedV1(m_swapChain->GetBuffer(n, IID_PPV_ARGS(m_renderTargets[n].GetAddressOf())));
+
+		wchar_t name[25] = {};
+		swprintf_s(name, L"Render target %u", n);
+		m_renderTargets[n]->SetName(name);
+
+		D3D12_RENDER_TARGET_VIEW_DESC rtvDesc = {};
+		rtvDesc.Format = m_backBufferFormat;
+		rtvDesc.ViewDimension = D3D12_RTV_DIMENSION_TEXTURE2D;
+
+		CD3DX12_CPU_DESCRIPTOR_HANDLE rtvDescCPUHandle(m_rtvDescriptorHeap->GetCPUDescriptorHandleForHeapStart(), n, m_rtvDescriptorSize);
+		m_d3dDevice->CreateRenderTargetView(m_renderTargets[n].Get(), &rtvDesc, rtvDescCPUHandle);
+	}
+
+	// Msaa.
+	D3D12_RENDER_TARGET_VIEW_DESC rtvDesc = {};
+	rtvDesc.Format = m_backBufferFormat;
+	rtvDesc.ViewDimension = D3D12_RTV_DIMENSION_TEXTURE2DMS;
+
+	m_d3dDevice->CreateRenderTargetView(
+		m_msaaRenderTarget.Get(), &rtvDesc,
+		GetMsaaRenderTargetView());
+}
+
+void D3DDeviceResources::CreateDepthStencilView()
+{
+	D3D12_DEPTH_STENCIL_VIEW_DESC dsvMSDesc = {};
+	dsvMSDesc.Format = m_depthBufferFormat;
+	dsvMSDesc.ViewDimension = D3D12_DSV_DIMENSION_TEXTURE2DMS;
+
+	m_d3dDevice->CreateDepthStencilView(
+		m_msaaDepthStencil.Get(), &dsvMSDesc,
+		GetMsaaDepthStencilView());
+
+	D3D12_DEPTH_STENCIL_VIEW_DESC dsvDesc = {};
+	dsvDesc.Format = m_depthBufferFormat;
+	dsvDesc.ViewDimension = D3D12_DSV_DIMENSION_TEXTURE2D;
+
+	m_d3dDevice->CreateDepthStencilView(m_depthStencil.Get(), &dsvDesc, GetDepthStencilView());
+	m_d3dDevice->CreateDepthStencilView(m_newDepthStencil.Get(), &dsvDesc, GetNewDepthStencilView());
+}
+
+void D3DDeviceResources::CreateRtvDescriptorHeaps_AutoUpdate(uint32 InNumRtvs /*= 0*/, PFVOID UpdateCallBack /*= nullptr*/)
+{
+	// RtvHeaps.
+	D3D12_DESCRIPTOR_HEAP_DESC rtvDescriptorHeapDesc = {};
+	rtvDescriptorHeapDesc.NumDescriptors = m_numRTVDescriptors + InNumRtvs;
+	rtvDescriptorHeapDesc.Type = D3D12_DESCRIPTOR_HEAP_TYPE_RTV;
+
+	ThrowIfFailedV1(m_d3dDevice->CreateDescriptorHeap(&rtvDescriptorHeapDesc, IID_PPV_ARGS(m_rtvDescriptorHeap.ReleaseAndGetAddressOf())));
+
+	m_rtvDescriptorHeap->SetName(L"D3DDeviceResources");
+
+	if (UpdateCallBack != nullptr)
+	{
+		UpdateCallBack();
+	}
+
+	static bool flag = false;
+	if (flag)
+	{
+		CreateRenderTargetView();		
+	}
+	flag = true;
+}
+
+void D3DDeviceResources::CreateDsvDescriptorHeaps_AutoUpdate(uint32 InNumDsvs /*= 0*/, PFVOID UpdateCallBack /*= nullptr*/)
+{
+	// DsvHeaps.
+	D3D12_DESCRIPTOR_HEAP_DESC dsvDescriptorHeapDesc = {};
+	dsvDescriptorHeapDesc.NumDescriptors = m_numDSVDescriptors + InNumDsvs;
+	dsvDescriptorHeapDesc.Type = D3D12_DESCRIPTOR_HEAP_TYPE_DSV;
+
+	ThrowIfFailedV1(m_d3dDevice->CreateDescriptorHeap(&dsvDescriptorHeapDesc, IID_PPV_ARGS(m_dsvDescriptorHeap.ReleaseAndGetAddressOf())));
+
+	m_dsvDescriptorHeap->SetName(L"D3DDeviceResources");
+
+	if (UpdateCallBack != nullptr)
+	{
+		UpdateCallBack();
+	}
+
+	static bool flag = false;
+	if (flag)
+	{
+		CreateDepthStencilView();
+	}
+	flag = true;
+}
 // Configures the Direct3D device, and stores handles to it and the device context.
 void D3DDeviceResources::CreateDeviceResources() 
 {
@@ -250,29 +346,9 @@ void D3DDeviceResources::CreateDeviceResources()
 
     m_commandQueue->SetName(L"D3DDeviceResources");
 
-    // Create descriptor heaps for render target views and depth stencil views.
-    D3D12_DESCRIPTOR_HEAP_DESC rtvDescriptorHeapDesc = {};
-    rtvDescriptorHeapDesc.NumDescriptors = m_numRTVDescriptors;
-    rtvDescriptorHeapDesc.Type = D3D12_DESCRIPTOR_HEAP_TYPE_RTV;
-
-    ThrowIfFailedV1(m_d3dDevice->CreateDescriptorHeap(&rtvDescriptorHeapDesc, IID_PPV_ARGS(m_rtvDescriptorHeap.ReleaseAndGetAddressOf())));
-
-    m_rtvDescriptorHeap->SetName(L"D3DDeviceResources");
-
     m_rtvDescriptorSize = m_d3dDevice->GetDescriptorHandleIncrementSize(D3D12_DESCRIPTOR_HEAP_TYPE_RTV);
 	m_dsvDescriptorSize = m_d3dDevice->GetDescriptorHandleIncrementSize(D3D12_DESCRIPTOR_HEAP_TYPE_DSV);
 	m_cbvSrvUavDescriptorSize = m_d3dDevice->GetDescriptorHandleIncrementSize(D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV);
-
-    if (m_depthBufferFormat != DXGI_FORMAT_UNKNOWN)
-    {
-        D3D12_DESCRIPTOR_HEAP_DESC dsvDescriptorHeapDesc = {};
-        dsvDescriptorHeapDesc.NumDescriptors = m_numDSVDescriptors;
-        dsvDescriptorHeapDesc.Type = D3D12_DESCRIPTOR_HEAP_TYPE_DSV;
-
-        ThrowIfFailedV1(m_d3dDevice->CreateDescriptorHeap(&dsvDescriptorHeapDesc, IID_PPV_ARGS(m_dsvDescriptorHeap.ReleaseAndGetAddressOf())));
-
-        m_dsvDescriptorHeap->SetName(L"D3DDeviceResources");
-    }
 
     // Create a command allocator for each back buffer that will be rendered to.
     for (UINT n = 0; n < m_backBufferCount; n++)
@@ -301,6 +377,9 @@ void D3DDeviceResources::CreateDeviceResources()
     {
         throw std::exception("CreateEvent");
     }
+
+	CreateRtvDescriptorHeaps_AutoUpdate();
+	CreateDsvDescriptorHeaps_AutoUpdate();
 }
 
 // These resources need to be recreated every time the window size is changed.
@@ -396,30 +475,12 @@ void D3DDeviceResources::CreateWindowSizeDependentResources()
     // Handle color space settings for HDR
     UpdateColorSpace();
 
-    // Obtain the back buffers for this window which will be the final render targets
-    // and create render target views for each of them.
-    for (UINT n = 0; n < m_backBufferCount; n++)
-    {
-        ThrowIfFailedV1(m_swapChain->GetBuffer(n, IID_PPV_ARGS(m_renderTargets[n].GetAddressOf())));
-
-        wchar_t name[25] = {};
-        swprintf_s(name, L"Render target %u", n);
-        m_renderTargets[n]->SetName(name);
-
-        D3D12_RENDER_TARGET_VIEW_DESC rtvDesc = {};
-        rtvDesc.Format = m_backBufferFormat;
-        rtvDesc.ViewDimension = D3D12_RTV_DIMENSION_TEXTURE2D;
-
-        CD3DX12_CPU_DESCRIPTOR_HANDLE rtvDescCPUHandle(m_rtvDescriptorHeap->GetCPUDescriptorHandleForHeapStart(), n, m_rtvDescriptorSize);
-        m_d3dDevice->CreateRenderTargetView(m_renderTargets[n].Get(), &rtvDesc, rtvDescCPUHandle);
-    }
-
     // Reset the index to the current back buffer.
     m_backBufferIndex = m_swapChain->GetCurrentBackBufferIndex();
 
-	{
-		CD3DX12_HEAP_PROPERTIES heapProperties(D3D12_HEAP_TYPE_DEFAULT);
-
+	// Create RTV & DSV Resources.
+	CD3DX12_HEAP_PROPERTIES heapProperties(D3D12_HEAP_TYPE_DEFAULT);
+	{	
 		//////////////////////////////////////////////////////////////
 		// Create 4x MSAA RT.
 		D3D12_RESOURCE_DESC msaaRTDesc = CD3DX12_RESOURCE_DESC::Tex2D(
@@ -445,92 +506,68 @@ void D3DDeviceResources::CreateWindowSizeDependentResources()
 			&msaaOptimizedClearValue,
 			IID_PPV_ARGS(m_msaaRenderTarget.ReleaseAndGetAddressOf())
 		));
-
-		D3D12_RENDER_TARGET_VIEW_DESC rtvDesc = {};
-		rtvDesc.Format = m_backBufferFormat;
-		rtvDesc.ViewDimension = D3D12_RTV_DIMENSION_TEXTURE2DMS;
-
-		m_d3dDevice->CreateRenderTargetView(
-			m_msaaRenderTarget.Get(), &rtvDesc,
-			GetMsaaRenderTargetView());
 		// Create 4x MSAA RT.
-		//////////////////////////////////////////////////////////////
+		//////////////////////////////////////////////////////////////	
 
-		//////////////////////////////////////////////////////////////
-		// Create an MSAA depth stencil view.
-		D3D12_RESOURCE_DESC depthStencilDesc = CD3DX12_RESOURCE_DESC::Tex2D(
-			m_depthBufferFormat,
-			backBufferWidth,
-			backBufferHeight,
-			1, // This depth stencil view has only one texture.
-			1, // Use a single mipmap level.
-			m_sampleCount,
-			m_num4MSQualityLevels - 1
-		);
-		depthStencilDesc.Flags |= D3D12_RESOURCE_FLAG_ALLOW_DEPTH_STENCIL;
+		if (m_depthBufferFormat != DXGI_FORMAT_UNKNOWN)
+		{
+			//////////////////////////////////////////////////////////////
+			// Create an MSAA Depth Stencil.
+			D3D12_RESOURCE_DESC depthStencilDesc0 = CD3DX12_RESOURCE_DESC::Tex2D(
+				m_depthBufferFormat,
+				backBufferWidth,
+				backBufferHeight,
+				1, // This depth stencil view has only one texture.
+				1, // Use a single mipmap level.
+				m_sampleCount,
+				m_num4MSQualityLevels - 1
+			);
+			depthStencilDesc0.Flags |= D3D12_RESOURCE_FLAG_ALLOW_DEPTH_STENCIL;
 
-		D3D12_CLEAR_VALUE depthOptimizedClearValue = {};
-		depthOptimizedClearValue.Format = m_depthBufferFormat;
-		depthOptimizedClearValue.DepthStencil.Depth = DefaultClearValue::Depth;
-		depthOptimizedClearValue.DepthStencil.Stencil = DefaultClearValue::Stencil;
+			D3D12_CLEAR_VALUE depthOptimizedClearValue = {};
+			depthOptimizedClearValue.Format = m_depthBufferFormat;
+			depthOptimizedClearValue.DepthStencil.Depth = DefaultClearValue::Depth;
+			depthOptimizedClearValue.DepthStencil.Stencil = DefaultClearValue::Stencil;
 
-		ThrowIfFailedV1(m_d3dDevice->CreateCommittedResource(
-			&heapProperties,
-			D3D12_HEAP_FLAG_NONE,
-			&depthStencilDesc,
-			D3D12_RESOURCE_STATE_DEPTH_WRITE,
-			&depthOptimizedClearValue,
-			IID_PPV_ARGS(m_msaaDepthStencil.ReleaseAndGetAddressOf())
-		));
+			ThrowIfFailedV1(m_d3dDevice->CreateCommittedResource(
+				&heapProperties,
+				D3D12_HEAP_FLAG_NONE,
+				&depthStencilDesc0,
+				D3D12_RESOURCE_STATE_DEPTH_WRITE,
+				&depthOptimizedClearValue,
+				IID_PPV_ARGS(m_msaaDepthStencil.ReleaseAndGetAddressOf())
+			));
+			// Create an MSAA depth stencil view.
+			//////////////////////////////////////////////////////////////
 
-		D3D12_DEPTH_STENCIL_VIEW_DESC dsvDesc = {};
-		dsvDesc.Format = m_depthBufferFormat;
-		dsvDesc.ViewDimension = D3D12_DSV_DIMENSION_TEXTURE2DMS;
+			// Create 2 DVS. One Default, One Maintained.
+			D3D12_RESOURCE_DESC depthStencilDesc1 = depthStencilDesc0;
+			depthStencilDesc1.SampleDesc.Count = 1;
+			depthStencilDesc1.SampleDesc.Quality = 0;
 
-		m_d3dDevice->CreateDepthStencilView(
-			m_msaaDepthStencil.Get(), &dsvDesc,
-			GetMsaaDepthStencilView());
-		// Create an MSAA depth stencil view.
-		//////////////////////////////////////////////////////////////
+			ThrowIfFailedV1(m_d3dDevice->CreateCommittedResource(
+				&heapProperties,
+				D3D12_HEAP_FLAG_NONE,
+				&depthStencilDesc1,
+				D3D12_RESOURCE_STATE_DEPTH_WRITE,
+				&depthOptimizedClearValue,
+				IID_PPV_ARGS(m_depthStencil.ReleaseAndGetAddressOf())
+			));
+
+			ThrowIfFailedV1(m_d3dDevice->CreateCommittedResource(
+				&heapProperties,
+				D3D12_HEAP_FLAG_NONE,
+				&depthStencilDesc1,
+				D3D12_RESOURCE_STATE_DEPTH_WRITE,
+				&depthOptimizedClearValue,
+				IID_PPV_ARGS(m_newDepthStencil.ReleaseAndGetAddressOf())
+			));
+
+			m_depthStencil->SetName(L"Depth stencil");
+
+			m_newDepthStencil->SetName(L"Depth stencil");
+		}
 	}
-
-    if (m_depthBufferFormat != DXGI_FORMAT_UNKNOWN)
-    {
-        // Allocate a 2-D surface as the depth/stencil buffer and create a depth/stencil view
-        // on this surface.
-        CD3DX12_HEAP_PROPERTIES depthHeapProperties(D3D12_HEAP_TYPE_DEFAULT);
-
-        D3D12_RESOURCE_DESC depthStencilDesc = CD3DX12_RESOURCE_DESC::Tex2D(
-            m_depthBufferFormat,
-            backBufferWidth,
-            backBufferHeight,
-            1, // This depth stencil view has only one texture.
-            1  // Use a single mipmap level.
-            );
-        depthStencilDesc.Flags |= D3D12_RESOURCE_FLAG_ALLOW_DEPTH_STENCIL;
-
-        D3D12_CLEAR_VALUE depthOptimizedClearValue = {};
-        depthOptimizedClearValue.Format = m_depthBufferFormat;
-        depthOptimizedClearValue.DepthStencil.Depth = DefaultClearValue::Depth;
-        depthOptimizedClearValue.DepthStencil.Stencil = DefaultClearValue::Stencil;
-
-        ThrowIfFailedV1(m_d3dDevice->CreateCommittedResource(
-            &depthHeapProperties,
-            D3D12_HEAP_FLAG_NONE,
-            &depthStencilDesc,
-            D3D12_RESOURCE_STATE_DEPTH_WRITE,
-            &depthOptimizedClearValue,
-            IID_PPV_ARGS(m_depthStencil.ReleaseAndGetAddressOf())
-            ));
-
-        m_depthStencil->SetName(L"Depth stencil");
-
-        D3D12_DEPTH_STENCIL_VIEW_DESC dsvDesc = {};
-        dsvDesc.Format = m_depthBufferFormat;
-        dsvDesc.ViewDimension = D3D12_DSV_DIMENSION_TEXTURE2D;
-
-        m_d3dDevice->CreateDepthStencilView(m_depthStencil.Get(), &dsvDesc, m_dsvDescriptorHeap->GetCPUDescriptorHandleForHeapStart());
-    }
 
     // Set the 3D rendering viewport and scissor rectangle to target the entire window.
     m_screenViewport.TopLeftX = m_screenViewport.TopLeftY = 0.f;
@@ -542,6 +579,9 @@ void D3DDeviceResources::CreateWindowSizeDependentResources()
     m_scissorRect.left = m_scissorRect.top = 0;
     m_scissorRect.right = backBufferWidth;
     m_scissorRect.bottom = backBufferHeight;
+
+	CreateRenderTargetView();
+	CreateDepthStencilView();
 }
 
 // This method is called when the Win32 window is created (or re-created).
@@ -595,6 +635,7 @@ void D3DDeviceResources::HandleDeviceLost()
 
 	m_msaaRenderTarget.Reset();
     m_depthStencil.Reset();
+	m_newDepthStencil.Reset();
     m_commandQueue.Reset();
     m_commandList.Reset();
     m_fence.Reset();
@@ -626,6 +667,8 @@ void D3DDeviceResources::HandleDeviceLost()
 // Prepare the command list and render target for rendering.
 void D3DDeviceResources::Prepare(D3D12_RESOURCE_STATES beforeState)
 {
+	UpdateGUI();
+
     // Reset command list and allocator.
     ThrowIfFailedV1(m_commandAllocators[m_backBufferIndex]->Reset());
     ThrowIfFailedV1(m_commandList->Reset(m_commandAllocators[m_backBufferIndex].Get(), nullptr));
@@ -992,6 +1035,14 @@ void D3DDeviceResources::UpdateColorSpace()
     }
 }
 
+void D3DDeviceResources::UpdateGUI()
+{
+	if (m_deviceNotify)
+	{
+		m_deviceNotify->UpdateGUI();
+	}
+}
+
 void D3DDeviceResources::RenderGUI()
 {
 	if (m_deviceNotify)
@@ -1063,11 +1114,18 @@ void D3DDeviceResources::CreateCommonDescriptorHeap(UINT numDescriptors, ID3D12D
 	ThrowIfFailedV1(m_d3dDevice->CreateDescriptorHeap(&desc, IID_PPV_ARGS(ppDescriptorHeap)));
 }
 
-void D3DDeviceResources::CreateTex2DShaderResourceView(ID3D12Resource *pResource, D3D12_CPU_DESCRIPTOR_HANDLE destDescriptor, DXGI_FORMAT format, UINT mipLevels /*= 1*/)
+void D3DDeviceResources::CreateTex2DShaderResourceView(ID3D12Resource *pResource, D3D12_CPU_DESCRIPTOR_HANDLE destDescriptor, DXGI_FORMAT InFormat /*= DXGI_FORMAT_UNKNOWN*/, UINT mipLevels /*= 1*/)
 {
 	D3D12_SHADER_RESOURCE_VIEW_DESC srvDesc = {};
 	srvDesc.Shader4ComponentMapping = D3D12_DEFAULT_SHADER_4_COMPONENT_MAPPING;
-	srvDesc.Format = format;
+	if (InFormat != DXGI_FORMAT_UNKNOWN)
+	{
+		srvDesc.Format = InFormat;
+	}
+	else
+	{
+		srvDesc.Format = pResource->GetDesc().Format;
+	}
 	srvDesc.ViewDimension = D3D12_SRV_DIMENSION_TEXTURE2D;
 	srvDesc.Texture2D.MipLevels = mipLevels;
 
@@ -1126,7 +1184,83 @@ void D3DDeviceResources::CreateDefaultBuffer(const void* pData, UINT64 byteSize,
 	// The caller can Release the uploadBuffer after it knows the copy has been executed.
 }
 
-void D3DDeviceResources::CreateOffscreenRenderTargets(UINT numRenderTargets, const DXGI_FORMAT* pRenderTargetFormats, const D3D12_RESOURCE_STATES* pDefaultStates)
+void D3DDeviceResources::CreateTexture2D(Texture* InTexture)
+{
+	// Create the actual default buffer resource.
+	ThrowIfFailedV1(m_d3dDevice->CreateCommittedResource(
+		&CD3DX12_HEAP_PROPERTIES(D3D12_HEAP_TYPE_DEFAULT),
+		D3D12_HEAP_FLAG_NONE,
+		&CD3DX12_RESOURCE_DESC::Tex2D(InTexture->Format, InTexture->Width, InTexture->Height),
+		D3D12_RESOURCE_STATE_COMMON,
+		nullptr,
+		IID_PPV_ARGS(&InTexture->Resource)));
+
+	const UINT64 uploadBufferSize = GetRequiredIntermediateSize(InTexture->Resource.Get(), 0, 1);
+
+	// In order to copy CPU memory data into our default buffer, we need to create
+	// an intermediate upload heap. 
+	ThrowIfFailedV1(m_d3dDevice->CreateCommittedResource(
+		&CD3DX12_HEAP_PROPERTIES(D3D12_HEAP_TYPE_UPLOAD),
+		D3D12_HEAP_FLAG_NONE,
+		&CD3DX12_RESOURCE_DESC::Buffer(uploadBufferSize),
+		D3D12_RESOURCE_STATE_GENERIC_READ,
+		nullptr,
+		IID_PPV_ARGS(&InTexture->UploadHeap)));
+
+
+	// Describe the data we want to copy into the default buffer.
+	D3D12_SUBRESOURCE_DATA subResourceData = {};
+	subResourceData.pData = InTexture->Data;
+	subResourceData.RowPitch = InTexture->RowBytes;
+	subResourceData.SlicePitch = InTexture->NumBytes;
+
+	// Schedule to copy the data to the default buffer resource.  At a high level, the helper function UpdateSubresources
+	// will copy the CPU memory into the intermediate upload heap.  Then, using ID3D12CommandList::CopySubresourceRegion,
+	// the intermediate upload heap data will be copied to mBuffer.
+	m_commandList->ResourceBarrier(1, &CD3DX12_RESOURCE_BARRIER::Transition(InTexture->Resource.Get(),
+		D3D12_RESOURCE_STATE_COMMON, D3D12_RESOURCE_STATE_COPY_DEST));
+	UpdateSubresources(m_commandList.Get(), InTexture->Resource.Get(), InTexture->UploadHeap.Get(), 0, 0, 1, &subResourceData);
+	m_commandList->ResourceBarrier(1, &CD3DX12_RESOURCE_BARRIER::Transition(InTexture->Resource.Get(),
+		D3D12_RESOURCE_STATE_COPY_DEST, D3D12_RESOURCE_STATE_GENERIC_READ));
+
+	// Note: uploadBuffer has to be kept alive after the above function calls because
+	// the command list has not been executed yet that performs the actual copy.
+	// The caller can Release the uploadBuffer after it knows the copy has been executed.
+
+	CreateTex2DShaderResourceView(InTexture->Resource.Get(), InTexture->HCPUDescriptor);
+}
+
+D3D12_GRAPHICS_PIPELINE_STATE_DESC D3DDeviceResources::CreateCommonPSO(const std::vector<D3D12_INPUT_ELEMENT_DESC>& InInputLayout, ID3D12RootSignature* InRootSig, ID3DBlob* InShaderVS, ID3DBlob* InShaderPS, ID3D12PipelineState** OutPSO)
+{
+	bool enable4xMsaa = GetDeviceOptions() & D3DDeviceResources::c_Enable4xMsaa;
+
+	//////////////////////////////////////////////////////////////////////////
+	// PSO Default.
+	D3D12_GRAPHICS_PIPELINE_STATE_DESC commonPSO;
+	ZeroMemory(&commonPSO, sizeof(D3D12_GRAPHICS_PIPELINE_STATE_DESC));
+	/// Common.
+	commonPSO.InputLayout = CD3DX12_INPUT_LAYOUT_DESC(InInputLayout);
+	commonPSO.pRootSignature = InRootSig;
+	/// Shader.
+	commonPSO.VS = CD3DX12_SHADER_BYTECODE(InShaderVS);
+	commonPSO.PS = CD3DX12_SHADER_BYTECODE(InShaderPS);
+	/// Default.
+	commonPSO.RasterizerState = CD3DX12_RASTERIZER_DESC(D3D12_DEFAULT);
+	commonPSO.BlendState = CD3DX12_BLEND_DESC(D3D12_DEFAULT);
+	commonPSO.DepthStencilState = CD3DX12_DEPTH_STENCIL_DESC(D3D12_DEFAULT);
+	commonPSO.SampleMask = UINT_MAX;
+	commonPSO.PrimitiveTopologyType = D3D12_PRIMITIVE_TOPOLOGY_TYPE_TRIANGLE;
+	commonPSO.NumRenderTargets = 1;
+	commonPSO.RTVFormats[0] = m_backBufferFormat;
+	commonPSO.SampleDesc.Count = enable4xMsaa ? 4 : 1;
+	commonPSO.SampleDesc.Quality = enable4xMsaa ? (GetNum4MSQualityLevels() - 1) : 0;
+	commonPSO.DSVFormat = m_depthBufferFormat;
+	CreateGraphicsPipelineState(&commonPSO, OutPSO);
+	//////////////////////////////////////////////////////////////////////////
+	return commonPSO;
+}
+
+void D3DDeviceResources::CreateOffscreenRenderTargets(UINT numRenderTargets, const DXGI_FORMAT* pRenderTargetFormats, const D3D12_RESOURCE_STATES* pDefaultStates, CD3DX12_CPU_DESCRIPTOR_HANDLE InHDescriptor)
 {
 	// Determine the render target size in pixels.
 	UINT width = std::max<UINT>(m_outputSize.right - m_outputSize.left, 1);
@@ -1162,12 +1296,16 @@ void D3DDeviceResources::CreateOffscreenRenderTargets(UINT numRenderTargets, con
 		m_d3dDevice->CreateRenderTargetView(
 			m_offscreenRenderTargets[i].Get(), &rtvDesc,
 			GetOffscreenRenderTargetView(i));
+
+		CreateTex2DShaderResourceView(m_offscreenRenderTargets[i].Get(), InHDescriptor);
+
+		InHDescriptor.Offset(1, GetCbvSrvUavDescriptorSize());
 	}
 	// Create Offscreen RT.
 	//////////////////////////////////////////////////////////////
 }
 
-const CD3DX12_STATIC_SAMPLER_DESC D3DDeviceResources::GetStaticSamplers(const EStaticSampler& type)
+const CD3DX12_STATIC_SAMPLER_DESC D3DDeviceResources::GetStaticSampler(const EStaticSampler& type)
 {
 	// Applications usually only need a handful of samplers. So just define them all up front
 	// and keep them available as part of the root signature.  
@@ -1222,6 +1360,17 @@ const CD3DX12_STATIC_SAMPLER_DESC D3DDeviceResources::GetStaticSamplers(const ES
 		0.0f,                              // mipLODBias
 		8);                                // maxAnisotropy
 
+	const CD3DX12_STATIC_SAMPLER_DESC Shadow(
+		6, // shaderRegister
+		D3D12_FILTER_COMPARISON_MIN_MAG_LINEAR_MIP_POINT, // filter
+		D3D12_TEXTURE_ADDRESS_MODE_BORDER,  // addressU
+		D3D12_TEXTURE_ADDRESS_MODE_BORDER,  // addressV
+		D3D12_TEXTURE_ADDRESS_MODE_BORDER,  // addressW
+		0.0f,                               // mipLODBias
+		16,                                 // maxAnisotropy
+		D3D12_COMPARISON_FUNC_LESS_EQUAL,
+		D3D12_STATIC_BORDER_COLOR_OPAQUE_BLACK);
+
 #define Ret(x) case SS_##x: return x;
 	switch (type)
 	{
@@ -1231,8 +1380,23 @@ const CD3DX12_STATIC_SAMPLER_DESC D3DDeviceResources::GetStaticSamplers(const ES
 		Ret(LinearClamp);
 		Ret(AnisotropicWrap);
 		Ret(AnisotropicClamp);
+		Ret(Shadow);
 	default:
 		break;
 	}
 	return PointWrap;
+}
+
+std::array<const CD3DX12_STATIC_SAMPLER_DESC, 7> D3DDeviceResources::GetAllStaticSamplers()
+{
+	return
+	{
+		GetStaticSampler(SS_PointWrap),
+		GetStaticSampler(SS_PointClamp),
+		GetStaticSampler(SS_LinearWrap),
+		GetStaticSampler(SS_LinearClamp),
+		GetStaticSampler(SS_AnisotropicWrap),
+		GetStaticSampler(SS_AnisotropicClamp),
+		GetStaticSampler(SS_Shadow)
+	};
 }

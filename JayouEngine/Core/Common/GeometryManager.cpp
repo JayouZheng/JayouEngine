@@ -7,9 +7,12 @@
 using namespace Utility;
 using namespace WinUtility::GeometryManager;
 
-int32 RenderItem::ObjectCount = 0;
+int32 RenderItem::Count = 0;
 
-GeometryData<ColorVertex> GeometryCreator::CreateLineGrid(float width, float depth, uint32 m, uint32 n)
+GeometryData<ColorVertex> GeometryCreator::CreateLineGrid(
+	float width, float depth, uint32 m, uint32 n, 
+	const XMFLOAT4& InColorX, const XMFLOAT4& InColorZ, 
+	const XMFLOAT4& InColorCell, const XMFLOAT4& InColorBlock)
 {
 	m = Math::Clamp(m, 2u, 2000u);
 	n = Math::Clamp(n, 2u, 2000u);
@@ -36,22 +39,22 @@ GeometryData<ColorVertex> GeometryCreator::CreateLineGrid(float width, float dep
 		{
 			float x = -halfWidth + j * dx;
 
-			meshData.Vertices[i*(n + 1) + j].Pos = XMFLOAT3(x, 0.0f, z);
+			meshData.Vertices[i*(n + 1) + j].Position = XMFLOAT3(x, 0.0f, z);
 
-			meshData.Vertices[i*(n + 1) + j].Color = XMFLOAT4(Colors::Gray);
+			meshData.Vertices[i*(n + 1) + j].Color = InColorCell;
 
 			if (i % 10 == 0 && j % 10 == 0)
 			{
-				meshData.Vertices[i*(n + 1) + j].Color = XMFLOAT4(Colors::Blue);
+				meshData.Vertices[i*(n + 1) + j].Color = InColorBlock;
 			}
 
 			if (i == m / 2)
 			{
-				meshData.Vertices[i*(n + 1) + j].Color = XMFLOAT4(Colors::Lime);
+				meshData.Vertices[i*(n + 1) + j].Color = InColorX;
 			}
 			else if (j == n / 2)
 			{
-				meshData.Vertices[i*(n + 1) + j].Color = XMFLOAT4(Colors::Red);
+				meshData.Vertices[i*(n + 1) + j].Color = InColorZ;
 			}
 		}
 	}
@@ -503,7 +506,7 @@ GeometryData<Vertex> GeometryCreator::CreateCylinder(float bottomRadius, float t
 	return meshData;
 }
 
-GeometryData<Vertex> GeometryCreator::CreateGrid(float width, float depth, uint32 m, uint32 n)
+GeometryData<Vertex> GeometryCreator::CreatePlane(float width, float depth, uint32 m, uint32 n)
 {
 	GeometryData<Vertex> meshData;
 
@@ -777,4 +780,33 @@ void GeometryCreator::BuildCylinderBottomCap(float bottomRadius, float topRadius
 		meshData.Indices32.push_back(baseIndex + i);
 		meshData.Indices32.push_back(baseIndex + i + 1);
 	}
+}
+
+GeometryData<ColorVertex> GeometryCreator::CreateDirLightGeo()
+{
+	GeometryData<ColorVertex> meshData;
+
+	float radius = 2.0f;
+	float length = 5.0f;
+
+	for (float i = 0; i < XM_2PI; i += XM_PIDIV4)
+	{
+		ColorVertex vertex;
+		vertex.Color = XMFLOAT4(Colors::Red);
+		vertex.Position = XMFLOAT3(cosf(i), sinf(i), 0.0f);
+		meshData.Vertices.push_back(vertex);
+
+		vertex.Position.z = -length;
+		meshData.Vertices.push_back(vertex);
+	}
+
+	for (uint32 i = 0; i < (UINT)meshData.Vertices.size(); i += 2)
+	{
+		meshData.Indices32.push_back(i);
+		meshData.Indices32.push_back(i + 1);
+		meshData.Indices32.push_back(i);
+		meshData.Indices32.push_back(i + 2);
+	}
+
+	return meshData;
 }

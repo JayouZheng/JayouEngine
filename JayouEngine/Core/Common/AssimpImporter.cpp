@@ -7,11 +7,13 @@
 #include <assimp/Importer.hpp>  // C++ m_importer interface
 #include <assimp/scene.h>       // Output data structure
 
-bool Core::AssimpImporter::Import(const ImportGeoDesc& InGeoDesc, const std::string& InFile)
+bool Core::AssimpImporter::Import(const ImportGeoDesc& InGeoDesc)
 {
+	FreeCachedData();
+
 	Assimp::Importer importer;
 
-	const aiScene* scene = importer.ReadFile(InFile.data(), InGeoDesc.PPSFlags);
+	const aiScene* scene = importer.ReadFile(InGeoDesc.PathName.data(), InGeoDesc.PPSFlags);
 
 	if (!scene)
 	{
@@ -19,15 +21,6 @@ bool Core::AssimpImporter::Import(const ImportGeoDesc& InGeoDesc, const std::str
 		return false;
 	}
 
-	const float maxFloat = std::numeric_limits<float>::max();
-
-	XMFLOAT3 vMinf3(+maxFloat, +maxFloat, +maxFloat);
-	XMFLOAT3 vMaxf3(-maxFloat, -maxFloat, -maxFloat);
-
-	XMVECTOR vMin = XMLoadFloat3(&vMinf3);
-	XMVECTOR vMax = XMLoadFloat3(&vMaxf3);
-
-	float scale   = InGeoDesc.Scale;
 	int numMeshes = scene->mNumMeshes;
 	std::vector<Geometry> geometries(numMeshes);
 	for (int i = 0; i < numMeshes; ++i)
@@ -40,25 +33,32 @@ bool Core::AssimpImporter::Import(const ImportGeoDesc& InGeoDesc, const std::str
 		std::vector<Vertex> vertices(numVertices);
 		for (int j = 0; j < numVertices; ++j)
 		{
-			vertices[j].Position.x = scale * scene->mMeshes[i]->mVertices[j].x;
-			vertices[j].Position.y = scale * scene->mMeshes[i]->mVertices[j].y;
-			vertices[j].Position.z = scale * scene->mMeshes[i]->mVertices[j].z;
+			vertices[j].Position.x = scene->mMeshes[i]->mVertices[j].x;
+			vertices[j].Position.y = scene->mMeshes[i]->mVertices[j].y;
+			vertices[j].Position.z = scene->mMeshes[i]->mVertices[j].z;
 
-			vertices[j].Normal.x = scene->mMeshes[i]->mNormals[j].x;
-			vertices[j].Normal.y = scene->mMeshes[i]->mNormals[j].y;
-			vertices[j].Normal.z = scene->mMeshes[i]->mNormals[j].z;
-
-			vertices[j].TangentU.x = scene->mMeshes[i]->mTangents[j].x;
-			vertices[j].TangentU.y = scene->mMeshes[i]->mTangents[j].y;
-			vertices[j].TangentU.z = scene->mMeshes[i]->mTangents[j].z;
-
-			vertices[j].TexC.x = scene->mMeshes[i]->mTextureCoords[0][j].x;
-			vertices[j].TexC.y = scene->mMeshes[i]->mTextureCoords[0][j].y;
-
-			XMVECTOR pos = XMLoadFloat3(&vertices[j].Position);
-
-			vMin = XMVectorMin(vMin, pos);
-			vMax = XMVectorMax(vMax, pos);
+			if (scene->mMeshes[i]->mNormals != nullptr)
+			{
+				vertices[j].Normal.x = scene->mMeshes[i]->mNormals[j].x;
+				vertices[j].Normal.y = scene->mMeshes[i]->mNormals[j].y;
+				vertices[j].Normal.z = scene->mMeshes[i]->mNormals[j].z;
+			}
+	
+			if (scene->mMeshes[i]->mTangents != nullptr)
+			{
+				vertices[j].TangentU.x = scene->mMeshes[i]->mTangents[j].x;
+				vertices[j].TangentU.y = scene->mMeshes[i]->mTangents[j].y;
+				vertices[j].TangentU.z = scene->mMeshes[i]->mTangents[j].z;
+			}
+			
+			if (scene->mMeshes[i]->mTextureCoords != nullptr)
+			{
+				if (scene->mMeshes[i]->mTextureCoords[0] != nullptr)
+				{
+					vertices[j].TexC.x = scene->mMeshes[i]->mTextureCoords[0][j].x;
+					vertices[j].TexC.y = scene->mMeshes[i]->mTextureCoords[0][j].y;
+				}
+			}			
 		}
 
 		// Index Array.
@@ -73,24 +73,19 @@ bool Core::AssimpImporter::Import(const ImportGeoDesc& InGeoDesc, const std::str
 			}
 		}
 
-		// Bounds.
-		XMFLOAT3 origin;		
-		XMFLOAT3 boxExtent;	
-		float    sphereRadius;
-
-		XMStoreFloat3(&origin, 0.5f*(vMin + vMax));
-		XMStoreFloat3(&boxExtent, 0.5f*(vMax - vMin));
-		sphereRadius = Math::Length(Vector3(.5f*(vMax - vMin)));
-
 		geometries[i].Name = InGeoDesc.Name + "_" + std::to_string(i);
+		geometries[i].PathName = InGeoDesc.PathName;
 		geometries[i].Data.Vertices  = vertices;
 		geometries[i].Data.Indices32 = indices;
-		geometries[i].Bounds = BoxSphereBounds(origin, boxExtent, sphereRadius);
+		geometries[i].Bounds = geometries[i].Data.CalcBounds();
 	}
 
 	for (auto geo : geometries)
 	{
-		m_geometries[geo.Name] = geo;
+		if (!geo.Data.Vertices.empty() && !geo.Data.Indices32.empty())
+		{
+			m_geometries[geo.Name] = geo;
+		}		
 	}
 
 	importer.FreeScene();
@@ -99,7 +94,16 @@ bool Core::AssimpImporter::Import(const ImportGeoDesc& InGeoDesc, const std::str
 
 Geometry Core::AssimpImporter::GetGeometry(const std::string& InGeoName)
 {
+	if (m_geometries.find(InGeoName + "_0") != m_geometries.end())
+	{
+		return m_geometries[InGeoName + "_0"];
+	}
 	return m_geometries[InGeoName];
+}
+
+const std::unordered_map<std::string, Geometry>& Core::AssimpImporter::GetAllGeometries() const
+{
+	return m_geometries;
 }
 
 void Core::AssimpImporter::FreeCachedData()

@@ -16,13 +16,29 @@ namespace Utility
 		{
 		public:
 
+			using convert_t = std::codecvt_utf8<wchar_t>;
+			using wsconvert_t = std::wstring_convert<convert_t, wchar_t>;
+
+			static std::string to_string(std::wstring wstr)
+			{
+				wsconvert_t strconverter;
+				return strconverter.to_bytes(wstr);
+			}
+
+			static std::wstring to_wstring(std::string str)
+			{
+				wsconvert_t strconverter;
+				return strconverter.from_bytes(str);
+			}
+
 			static std::wstring StringToWString(const std::string& str);
+			static std::string  WStringToString(const std::wstring& wstr);
 
 			static std::wstring AnsiToWString(const std::string& str);
 			
 			// Data converted from UTF-16 to non-Unicode encodings is subject to data loss,
 			// because a code page might not be able to represent every character used in the specific Unicode data.
-			static std::string WStringToString(const std::wstring& wstr);
+			static std::string WStringToStringV2(const std::wstring& wstr);
 
 			// wchar_t as a numeric digit, or -1 if it is not a digit.
 			static int32 WCharToInt32(wchar_t wch);
@@ -53,6 +69,8 @@ namespace Utility
 
 			template<typename T>
 			static std::vector<T> WStringToArray(const std::wstring& wstr, const wchar_t& separator);
+
+			static bool SplitFileNameAndExtFromPathW(const std::wstring& InPath, std::wstring& OutName, std::wstring& OutExt, std::wstring* OutPath = nullptr);
 
 		};
 
@@ -95,21 +113,6 @@ namespace Utility
 			L"0123456789",
 			L"\u0660\u0661\u0662\u0663\u0664\u0665\u0666\u0667\u0668\u0669",
 			// ...
-		};
-
-		using convert_t = std::codecvt_utf8<wchar_t>;
-		using wsconvert_t = std::wstring_convert<convert_t, wchar_t>;
-
-		inline std::string to_string(std::wstring wstr)
-		{
-			wsconvert_t strconverter;
-			return strconverter.to_bytes(wstr);
-		}
-
-		inline std::wstring to_wstring(std::string str)
-		{
-			wsconvert_t strconverter;
-			return strconverter.from_bytes(str);
-		}
+		};		
 	}
 }

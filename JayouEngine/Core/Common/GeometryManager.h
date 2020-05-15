@@ -4,22 +4,83 @@
 
 #pragma once
 
-#include "D3DDeviceResources.h"
-
+#include "Utility.h"
+#include "../Math/Math.h"
 #include "Interface/IObject.h"
 
+using namespace Math;
 using namespace Core;
-using namespace D3DCore;
 using namespace DirectX;
 
 namespace Utility
 {
 	namespace GeometryManager
 	{
-		struct ColorVertex
+		enum EBuiltInGeoType
 		{
-			XMFLOAT3 Pos;
-			XMFLOAT4 Color;
+			BG_Box,
+			BG_Sphere_1,
+			BG_Sphere_2,
+			BG_Cylinder,
+			BG_Plane
+		};
+
+		enum RenderLayer
+		{
+			Opaque,
+			Transparent,
+			AlphaTested,
+			ScreenQuad,
+			Line,
+			Selectable,
+			Selected,
+			SkySphere,
+			All,
+			Count
+		};
+
+		enum EVertexFormat
+		{
+			VF_ColorVertex,
+			VF_Vertex
+		};
+
+		struct BuiltInGeoDesc
+		{
+			std::string Name;
+			std::string PathName = "JayouEngine_BuiltIn_Geometry";
+
+			Vector3 Translation = { 0.0f };
+			Vector3 Rotation = { 0.0f };
+			Vector3 Scale = { 1.0f };
+
+			float Depth = 10.0f;
+			float Width = 10.0f;
+			float Height = 10.0f;
+			
+			float Radius = 20.0f;
+			float TopRadius = 2.5f;
+			float BottomRadius = 2.5f;
+
+			int32 SliceCount = 5;
+			int32 StackCount = 5;
+			int32 NumSubdivisions = 1;
+
+			EBuiltInGeoType GeoType = BG_Box;
+			XMFLOAT4 Color = XMFLOAT4(Colors::Gray);
+		};
+
+		struct ColorVertex
+		{			
+			XMFLOAT4 Color = XMFLOAT4(Colors::LightGray);
+			XMFLOAT3 Position;
+
+			ColorVertex() {}
+			ColorVertex(
+				const XMFLOAT3& p,
+				const XMFLOAT4& c) :
+				Position(p),
+				Color(c) {}
 		};
 
 		struct Vertex
@@ -44,33 +105,12 @@ namespace Utility
 				TangentU(tx, ty, tz),
 				TexC(u, v) {}
 
+			XMFLOAT4 Color = XMFLOAT4(Colors::LightGray);
 			XMFLOAT3 Position;
 			XMFLOAT3 Normal;
 			XMFLOAT3 TangentU;
 			XMFLOAT2 TexC;
-		};
-
-		template<typename TVertex>
-		struct GeometryData
-		{
-			std::vector<TVertex> Vertices;
-			std::vector<uint32> Indices32;
-
-			std::vector<uint16>& GetIndices16()
-			{
-				if (mIndices16.empty())
-				{
-					mIndices16.resize(Indices32.size());
-					for (size_t i = 0; i < Indices32.size(); ++i)
-						mIndices16[i] = static_cast<uint16>(Indices32[i]);
-				}
-
-				return mIndices16;
-			}
-
-		private:
-			std::vector<uint16> mIndices16;
-		};
+		};		
 
 		struct BoxSphereBounds
 		{
@@ -108,7 +148,63 @@ namespace Utility
 			}
 		};
 
-		// Defines a subrange of geometry in a D3DGeometry.  This is for when multiple
+		template<typename TVertex>
+		struct GeometryData
+		{
+			std::vector<TVertex> Vertices;
+			std::vector<uint32> Indices32;
+
+			std::vector<uint16>& GetIndices16()
+			{
+				if (mIndices16.empty())
+				{
+					mIndices16.resize(Indices32.size());
+					for (size_t i = 0; i < Indices32.size(); ++i)
+						mIndices16[i] = static_cast<uint16>(Indices32[i]);
+				}
+
+				return mIndices16;
+			}
+
+			BoxSphereBounds CalcBounds()
+			{
+				const float maxFloat = std::numeric_limits<float>::max();
+
+				Vector3 vmin(+maxFloat);
+				Vector3 vmax(-maxFloat);
+
+				for (auto vertex : Vertices)
+				{
+					Vector3 pos = vertex.Position;
+					vmin = Math::Min(vmin, pos);
+					vmax = Math::Max(vmax, pos);
+				}
+
+				// Bounds.
+				XMFLOAT3 origin;
+				XMFLOAT3 boxExtent;
+				float    sphereRadius;
+
+				origin = 0.5f*(vmin + vmax);
+				boxExtent = 0.5f*(vmax - vmin);
+				sphereRadius = Math::Length(Vector3(.5f*(vmax - vmin)));
+
+				return BoxSphereBounds(origin, boxExtent, sphereRadius);
+			}
+
+			void SetColor(const XMFLOAT4& InColor)
+			{
+				for (auto& vertex : Vertices)
+				{
+					vertex.Color = InColor;
+				}
+			}
+
+		private:
+			std::vector<uint16> mIndices16;
+		};
+
+		// Defines a subrange of geometry in a D3DRenderData.  This is for when multiple
 		// geometries are stored in one vertex and index buffer.  It provides the offsets
 		// and data needed to draw a subset of geometry stores in the vertex and index
 		// buffers.
@@ -121,29 +217,78 @@ namespace Utility
 			int32  BaseVertexLocation = 0;
 			uint32 StartInstanceLocation = 0;
 
-			// Bounding box of the geometry defined by this submesh.
+			// Bounding box of the geometry defined by this section.
 			BoxSphereBounds Bounds;
-		};
+
+			template<typename TVertex, typename TIndex>
+			void CalcBounds(const std::vector<TVertex>& vertices, const std::vector<TIndex>& indices)
+			{
+				uint32 maxVertexId = 0;
+				for (uint32 i = StartIndexLocation; i < (StartIndexLocation + IndexCountPerInstance); ++i)
+				{
+					maxVertexId = Math::Max(maxVertexId, (uint32)indices[i]);
+				}
+
+				const float maxFloat = std::numeric_limits<float>::max();
+
+				Vector3 vmin(+maxFloat);
+				Vector3 vmax(-maxFloat);
+
+				for (uint32 i = BaseVertexLocation; i <= maxVertexId; ++i)
+				{
+					Vector3 pos = vertices[i].Position;
+					vmin = Math::Min(vmin, pos);
+					vmax = Math::Max(vmax, pos);
+				}
+
+				// Bounds.
+				XMFLOAT3 origin;
+				XMFLOAT3 boxExtent;
+				float    sphereRadius;
+
+				origin = 0.5f*(vmin + vmax);
+				boxExtent = 0.5f*(vmax - vmin);
+				sphereRadius = Math::Length(Vector3(.5f*(vmax - vmin)));
+
+				Bounds = BoxSphereBounds(origin, boxExtent, sphereRadius);
+			}
+		};	
 
 		struct Geometry : public IObject
 		{
 			GeometryData<Vertex> Data;
-			BoxSphereBounds  Bounds;
+			BoxSphereBounds      Bounds;
+
+			void CalcBounds()
+			{
+				Bounds = Data.CalcBounds();
+			}
+
+			void SetColor(const XMFLOAT4& InColor)
+			{
+				for (auto& vertex : Data.Vertices)
+				{
+					vertex.Color = InColor;
+				}
+			}
+
+			GeometryData<ColorVertex> GetSimpleColorGeometry(const XMFLOAT4& InColor)
+			{
+				SetColor(InColor);
+				GeometryData<ColorVertex> colorGeo;
+				for (auto vertex : Data.Vertices)
+				{				
+					colorGeo.Vertices.push_back(ColorVertex(vertex.Position, InColor));				
+				}
+				colorGeo.Indices32 = Data.Indices32;
+				return colorGeo;
+			}
 
 			// Animation...
 			// Material...
 			// Texture...
 		};
-
-		struct Light : public IObject
-		{
-			DirectX::XMFLOAT3 Strength = { 0.5f, 0.5f, 0.5f };
-			float FalloffStart = 1.0f;                          // point/spot light only
-			DirectX::XMFLOAT3 Direction = { 0.0f, -1.0f, 0.0f };// directional/spot light only
-			float FalloffEnd = 10.0f;                           // point/spot light only
-			DirectX::XMFLOAT3 Position = { 0.0f, 0.0f, 0.0f };  // point/spot light only
-			float SpotPower = 64.0f;                            // spot light only
-		};
+		
 	}
 }
 
@@ -154,11 +299,8 @@ namespace WinUtility
 	{
 		using namespace Utility::GeometryManager;
 
-		struct D3DGeometry
+		struct D3DRenderData
 		{
-			// Give it a name so we can look it up by name.
-			std::string Name;
-
 			// System memory copies.  Use Blobs because the vertex/index format can be generic.
 			// It is up to the client to cast appropriately.
 			// Using D3DCreateBlob(...), CopyMemory(...).
@@ -179,10 +321,12 @@ namespace WinUtility
 			DXGI_FORMAT IndexFormat = DXGI_FORMAT_R16_UINT;
 			uint32 IndexBufferByteSize = 0;
 
-			// A D3DGeometry may store multiple geometries in one vertex/index buffer.
+			EVertexFormat VertexFormat = VF_Vertex;
+
+			// A D3DRenderData may store multiple geometries in one vertex/index buffer.
 			// Use this container to define the Submesh geometries so we can draw
 			// the Submeshes individually.
-			std::unordered_map<std::string, Section> DrawArgs;	
+			std::unordered_map<std::string, Section> Sections;	
 
 			D3D12_VERTEX_BUFFER_VIEW VertexBufferView() const
 			{
@@ -212,101 +356,51 @@ namespace WinUtility
 			}
 		};
 
-		struct RenderItem
+		struct RenderItem : public IObject
 		{
 		public:
 
-			RenderItem() { ObjectCBufferIndex = ObjectCount++; }
-			RenderItem(const RenderItem& item) = delete;
+			// Also as RenderItem Index.
+			int32  MaterialIndex = 0;
 
-			static int32 ObjectCount;
-			int32 ObjectCBufferIndex; // Also as RenderItem Index.
+			uint32 NumVertices;
+			uint32 NumIndices;
 
-			// Give it a name so we can look it up by name.
-			std::string Name;
+			XMFLOAT4 VertexColor = XMFLOAT4(Colors::Gray);
 
-			std::unique_ptr<D3DGeometry> Geometry = nullptr;
-			
-			Matrix4 Local = Matrix4(EIdentityTag::kIdentity);
-			Matrix4 World = Matrix4(EIdentityTag::kIdentity);
+			// Transform Matrix.
+			Matrix4                        TransFormMatrix = Matrix4(kIdentity);
+			Vector3                        Translation = { 0.0f };
+			Vector3                        Rotation = { 0.0f };
+			Vector3                        Scale = { 1.0f };
 
-			bool bObjectDataChanged = true;
+			BoxSphereBounds                Bounds;
 
 			// Primitive topology.
-			D3D12_PRIMITIVE_TOPOLOGY PrimitiveType = D3D11_PRIMITIVE_TOPOLOGY_TRIANGLELIST;
+			D3D12_PRIMITIVE_TOPOLOGY       PrimitiveType = D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST;
 
-			///////////////////////////////////////////////////////
-			// Custom Data Field. / Per FScene Structure Buffer Offset.
-			int PerFSceneSBufferOffset = 0;
-			///////////////////////////////////////////////////////
+			std::unique_ptr<D3DRenderData> RenderData = nullptr;
 
-			// NOTE: NO Section.
-			template<typename _T1, typename _T2>
-			void CreateCommonGeometry(D3DDeviceResources* deviceResources, const std::string& name, const std::vector< _T1>& vertices, const std::vector< _T2>& indices)
+			bool                           bIntersectBoundingOnly = false;
+			bool                           bCastShadow = true;
+
+			GeometryData<Vertex>           CachedGeometryData;
+			BuiltInGeoDesc                 CachedBuiltInGeoDesc;
+
+			static int32 Count;
+
+			RenderItem()
 			{
-				const UINT vbByteSize = (UINT)vertices.size() * sizeof(_T1);
-				const UINT ibByteSize = (UINT)indices.size() * sizeof(_T2);
-
-				Name = name;
-
-				Geometry = std::make_unique<D3DGeometry>();
-
-				ThrowIfFailedV1(D3DCreateBlob(vbByteSize, &Geometry->VertexBufferCPU));
-				CopyMemory(Geometry->VertexBufferCPU->GetBufferPointer(), vertices.data(), vbByteSize);
-
-				ThrowIfFailedV1(D3DCreateBlob(ibByteSize, &Geometry->IndexBufferCPU));
-				CopyMemory(Geometry->IndexBufferCPU->GetBufferPointer(), indices.data(), ibByteSize);
-
-				deviceResources->CreateDefaultBuffer(vertices.data(), vbByteSize,
-					&Geometry->VertexBufferGPU, &Geometry->VertexBufferUploader);
-				deviceResources->CreateDefaultBuffer(indices.data(), ibByteSize,
-					&Geometry->IndexBufferGPU, &Geometry->IndexBufferUploader);
-
-				// Vertex Buffer View Data.
-				Geometry->VertexByteStride = sizeof(_T1);
-				Geometry->VertexBufferByteSize = vbByteSize;
-
-				// Index Buffer View Data.
-				if (std::is_same<_T2, uint16>::value)
-					Geometry->IndexFormat = DXGI_FORMAT_R16_UINT;
-				else if ((std::is_same<_T2, uint32>::value))
-					Geometry->IndexFormat = DXGI_FORMAT_R32_UINT;
-				Geometry->IndexBufferByteSize = ibByteSize;
-
-				Section submesh;
-				submesh.IndexCountPerInstance = (UINT)indices.size();
-				submesh.InstanceCount = 1;
-				submesh.StartIndexLocation = 0;
-				submesh.BaseVertexLocation = 0;
-				submesh.StartInstanceLocation = 0;
-
-				Geometry->DrawArgs[name] = submesh;
-			}
-							
-			template<typename TLambda = PFVOID>
-			void Draw(ID3D12GraphicsCommandList* commandList, const TLambda& lambda = defalut)
-			{
-				commandList->IASetVertexBuffers(0, 1, &Geometry->VertexBufferView());
-				commandList->IASetIndexBuffer(&Geometry->IndexBufferView());
-				commandList->IASetPrimitiveTopology(PrimitiveType);
-
-				// Set/Bind Per Object Data.
-				lambda();
-				
-				for (auto& e : Geometry->DrawArgs)
-				{
-					Section& submesh = e.second;
-					commandList->DrawIndexedInstanced(submesh.IndexCountPerInstance,
-						submesh.InstanceCount,
-						submesh.StartIndexLocation,
-						submesh.BaseVertexLocation,
-						submesh.StartInstanceLocation);
-				}
+				Index = Count++;
 			}
 
-		private:
-
-			static void defalut() {}
+			void SetTransFormMatrix(const Vector3& InTranslation, const Vector3& InRotation, const Vector3& InScale)
+			{
+				TransFormMatrix = Matrix4(AffineTransform(InTranslation).Rotation(InRotation).Scale(InScale));
+				Translation = InTranslation;
+				Rotation = InRotation;
+				Scale = InScale;
+			}
 		};
 
 		class GeometryCreator
@@ -317,7 +411,11 @@ namespace WinUtility
 			/// Creates an mxn grid in the xz-plane with m rows and n columns, centered
 			/// at the origin with the specified width and depth.
 			///</summary>
-			static GeometryData<ColorVertex> CreateLineGrid(float width, float depth, uint32 m, uint32 n);
+			static GeometryData<ColorVertex> CreateLineGrid(float width, float depth, uint32 m, uint32 n, 
+				const XMFLOAT4& InColorX = XMFLOAT4(Colors::Red),
+				const XMFLOAT4& InColorZ = XMFLOAT4(Colors::Lime),
+				const XMFLOAT4& InColorCell = XMFLOAT4(Colors::Gray),
+				const XMFLOAT4& InColorBlock = XMFLOAT4(Colors::Blue));
 
 			static GeometryData<ColorVertex> CreateDefaultBox();
 
@@ -350,12 +448,16 @@ namespace WinUtility
 			/// Creates an mxn grid in the xz-plane with m rows and n columns, centered
 			/// at the origin with the specified width and depth.
 			///</summary>
-			static GeometryData<Vertex> CreateGrid(float width, float depth, uint32 m, uint32 n);
+			static GeometryData<Vertex> CreatePlane(float width, float depth, uint32 m, uint32 n);
 
 			///<summary>
 			/// Creates a quad aligned with the screen.  This is useful for postprocessing and screen effects.
 			///</summary>
 			static GeometryData<Vertex> CreateQuad(float x, float y, float w, float h, float depth);
+
+			static GeometryData<ColorVertex> CreateDirLightGeo();
+			static GeometryData<ColorVertex> CreatePointLightGeo();
+			static GeometryData<ColorVertex> CreateSpotLightGeo();
 
 		private:
 

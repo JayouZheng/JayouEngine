@@ -105,9 +105,13 @@ namespace Math
 
 		//////////////////////////////////////////////////////////////////////////////////////
 		// Modified by Jianyao Zheng
-		INLINE AffineTransform RotationX(float angle) { return *this * MakeXRotation(angle); }
-		INLINE AffineTransform RotationY(float angle) { return *this * MakeYRotation(angle); }
-		INLINE AffineTransform RotationZ(float angle) { return *this * MakeZRotation(angle); }
+		INLINE AffineTransform RotationXRad(float angle) { return *this * MakeXRotation(angle); }
+		INLINE AffineTransform RotationYRad(float angle) { return *this * MakeYRotation(angle); }
+		INLINE AffineTransform RotationZRad(float angle) { return *this * MakeZRotation(angle); }
+
+		INLINE AffineTransform RotationX(float angle) { return *this * MakeXRotation(angle*(XM_PI / 180.0f)); }
+		INLINE AffineTransform RotationY(float angle) { return *this * MakeYRotation(angle*(XM_PI / 180.0f)); }
+		INLINE AffineTransform RotationZ(float angle) { return *this * MakeZRotation(angle*(XM_PI / 180.0f)); }
 
 		INLINE AffineTransform Rotation(Vector3 rotate) { return RotationX(rotate.GetX()).RotationY(rotate.GetY()).RotationZ(rotate.GetZ()); }
 

@@ -14,9 +14,41 @@ using namespace DirectX;
 
 namespace Utility
 {
+	enum ECameraViewType
+	{
+		CV_FirstPersonView,
+		CV_FocusPointView,
+		CV_TopView,
+		CV_BottomView,
+		CV_LeftView,
+		CV_RightView,
+		CV_FrontView,
+		CV_BackView
+	};
+
+	enum ECameraProjType
+	{
+		CP_PerspectiveProj,
+		CP_OrthographicProj
+	};
+
 	class Camera : public IObject
 	{
 	public:
+
+		/////////////////////////////////
+		// C4316: object allocated on the 
+		// heap may not be aligned 64...
+		void* operator new(size_t InSize)
+		{
+			return _mm_malloc(InSize, 64);
+		}
+
+		void operator delete(void* InPtr)
+		{
+			_mm_free(InPtr);
+		}
+		/////////////////////////////////
 
 		Camera();
 		~Camera();
@@ -26,6 +58,7 @@ namespace Utility
 		XMFLOAT3 GetPosition3f() const;
 		void SetPosition(float x, float y, float z);
 		void SetPosition(const XMFLOAT3& v);
+		void SetPosition(const XMVECTOR& v);
 
 		// Get camera basis vectors.
 		XMVECTOR GetRight() const;
@@ -62,11 +95,16 @@ namespace Utility
 		void SetPerspectiveProj();
 		void SetOrthographicProj();
 
+		// For DirLight to Cast Shadow.
+		void SetDirLightFrustum(float radius);
+		XMMATRIX GetShadowTransform();
+
 		void UpdateProj();
 
 		// Define camera space via LookAt parameters.
 		void LookAt(FXMVECTOR pos, FXMVECTOR target, FXMVECTOR worldUp);
 		void LookAt(const XMFLOAT3& pos, const XMFLOAT3& target, const XMFLOAT3& up);
+		void DirLightLookAt(const XMVECTOR& pos, const XMVECTOR& target, const XMVECTOR& up);
 
 		// Get View/Proj matrices.
 		XMMATRIX GetView() const;

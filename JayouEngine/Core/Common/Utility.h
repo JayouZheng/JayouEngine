@@ -4,31 +4,34 @@
 
 #pragma once
 
-#include "../Math/Math.h"
-
 #include "TypeDef.h"
-#include "StringManager.h"
-
-using Microsoft::WRL::ComPtr;
-
-using namespace DirectX;
-using namespace Math;
 
 namespace Utility
 {
 	uint32 CalcConstantBufferByteSize(uint32 byteSize);
+
+	struct CD3DX12_INPUT_LAYOUT_DESC : public D3D12_INPUT_LAYOUT_DESC
+	{
+		CD3DX12_INPUT_LAYOUT_DESC() = default;
+		explicit CD3DX12_INPUT_LAYOUT_DESC(const D3D12_INPUT_LAYOUT_DESC& o) :
+			D3D12_INPUT_LAYOUT_DESC(o) {}
+
+		CD3DX12_INPUT_LAYOUT_DESC(const std::vector<D3D12_INPUT_ELEMENT_DESC>& InInputLayout) 
+		{
+			this->pInputElementDescs = InInputLayout.data();
+			this->NumElements = (uint32)InInputLayout.size();
+		}
+		CD3DX12_INPUT_LAYOUT_DESC(D3D12_INPUT_ELEMENT_DESC* InElemDescs, uint32 InNumElems) 
+		{
+			this->pInputElementDescs = InElemDescs;
+			this->NumElements = InNumElems;
+		}
+	};
 }
 
 namespace WinUtility
-{	
+{
 	ComPtr<ID3DBlob> LoadBinary(const std::wstring& filename);
-
-	ComPtr<ID3D12Resource> CreateDefaultBuffer(
-		ID3D12Device* device,
-		ID3D12GraphicsCommandList* cmdList,
-		const void* initData,
-		UINT64 byteSize,
-		ComPtr<ID3D12Resource>& uploadBuffer);
 
 	ComPtr<ID3DBlob> CompileShader(
 		const std::wstring& filename,
@@ -51,7 +54,7 @@ namespace WinUtility
 			int lineNumber) :
 			ErrorCode(hr),
 			FunctionName(functionName),
-			Filename(filename),
+			PathName(filename),
 			LineNumber(lineNumber)
 		{}
 
@@ -61,12 +64,12 @@ namespace WinUtility
 			_com_error err(ErrorCode);
 			std::wstring msg = err.ErrorMessage();
 
-			return FunctionName + L" failed in " + Filename + L"; line " + std::to_wstring(LineNumber) + L"; error: " + msg;
+			return FunctionName + L" failed in " + PathName + L"; line " + std::to_wstring(LineNumber) + L"; error: " + msg;
 		}
 
 		HRESULT ErrorCode = S_OK;
 		std::wstring FunctionName;
-		std::wstring Filename;
+		std::wstring PathName;
 		int LineNumber = -1;
 	};
 	
@@ -86,18 +89,24 @@ namespace WinUtility
 		HRESULT result;
 	};
 
+	inline std::wstring _ansi_to_wstring(const std::string& str)
+	{
+		int bufferlen = MultiByteToWideChar(CP_ACP, 0, str.c_str(), -1, NULL, 0);
+		wchar_t* buffer = new wchar_t[bufferlen];
+		MultiByteToWideChar(CP_ACP, 0, str.c_str(), -1, buffer, bufferlen);
+		std::wstring wstr(buffer);
+		delete[] buffer;
+		return wstr;
+	}
+
 // Helper utility converts D3D API failures into exceptions.
 #ifndef ThrowIfFailedV1
 #define ThrowIfFailedV1(x)                                                          \
 {                                                                                   \
     HRESULT hr__ = (x);                                                             \
-    std::wstring wfn = Utility::StringManager::StringUtil::AnsiToWString(__FILE__); \
+    std::wstring wfn = _ansi_to_wstring(__FILE__);                                       \
     if(FAILED(hr__)) { throw DxException(hr__, L#x, wfn, __LINE__); }               \
 }
-#endif
-
-#ifndef ReleaseCom
-#define ReleaseCom(x) { if(x){ x->Release(); x = 0; } }
 #endif
 
 	inline void ThrowIfFailedV2(HRESULT hr)
@@ -109,5 +118,9 @@ namespace WinUtility
 	}
 
 #pragma endregion
+
+#ifndef ReleaseCom
+#define ReleaseCom(x) { if(x){ x->Release(); x = 0; } }
+#endif
 
 }

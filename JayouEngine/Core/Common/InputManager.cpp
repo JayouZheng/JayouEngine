@@ -3,6 +3,7 @@
 //
 
 #include "InputManager.h"
+#include <windows.h>
 
 bool WinUtility::InputManager::IsKeyDown(int vkeyCode)
 {

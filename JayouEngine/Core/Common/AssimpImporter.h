@@ -14,9 +14,11 @@ namespace Core
 
 		AssimpImporter() = default;
 
-		bool Import(const ImportGeoDesc& InGeoDesc, const std::string& InFile) override;
+		bool Import(const ImportGeoDesc& InGeoDesc) override;
 
 		Geometry GetGeometry(const std::string& InGeoName) override;
+
+		const std::unordered_map<std::string, Geometry>& GetAllGeometries() const;
 
 		void FreeCachedData() override;
 

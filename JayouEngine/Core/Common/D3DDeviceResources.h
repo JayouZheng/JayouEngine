@@ -5,9 +5,13 @@
 #pragma once
 
 #include "Utility.h"
+#include "TextureImporter.h"
+#include "GeometryManager.h"
 
+using namespace Math;
 using namespace Utility;
 using namespace WinUtility;
+using namespace WinUtility::GeometryManager;
 
 namespace D3DCore
 {
@@ -17,11 +21,14 @@ namespace D3DCore
         virtual void OnDeviceLost() = 0;
         virtual void OnDeviceRestored() = 0;
 
+		virtual void UpdateGUI() = 0;
 		virtual void RenderGUI() = 0;
 		virtual void PostProcessing() = 0;
 		virtual void OnOptionsChanged() = 0;
 
 		virtual void ParseCommandLine(std::wstring cmdLine) = 0;
+
+		virtual ~IDeviceNotify() {}
     };
 
 	namespace DefaultClearValue
@@ -38,7 +45,8 @@ namespace D3DCore
 		SS_LinearWrap,
 		SS_LinearClamp,
 		SS_AnisotropicWrap,
-		SS_AnisotropicClamp
+		SS_AnisotropicClamp,
+		SS_Shadow
 	};
 
     // Controls all the DirectX device resources.
@@ -63,7 +71,8 @@ namespace D3DCore
 		void CreateOffscreenRenderTargets(
 			UINT numRenderTargets, 
 			const DXGI_FORMAT* pRenderTargetFormats, 
-			const D3D12_RESOURCE_STATES* pDefaultStates);
+			const D3D12_RESOURCE_STATES* pDefaultStates,
+			CD3DX12_CPU_DESCRIPTOR_HANDLE InHDescriptor);
         void SetWindow(HWND window, int width, int height, std::wstring cmdLine);
         bool WindowSizeChanged(int width, int height);
         void HandleDeviceLost();
@@ -75,6 +84,7 @@ namespace D3DCore
         void Present(D3D12_RESOURCE_STATES beforeState = D3D12_RESOURCE_STATE_RENDER_TARGET);
         void WaitForGpu() noexcept;
 
+		void UpdateGUI();
 		void RenderGUI();
 		void PostProcessing();
 		void OnOptionsChanged();
@@ -87,7 +97,8 @@ namespace D3DCore
 		void SetOptions(unsigned int options) { m_options = options; OnOptionsChanged(); }
 		void SetActiveOffscreenRTIndex(UINT index) { m_activeOffscreenRTIndex = index; }
 
-		// Some Convenient Functions.
+		////////////////////////////////////////////////////////////////////////////////////////////////////////
+		// Some Convenient Helper Creator Functions.
 		void CreateRootSignature(D3D12_ROOT_SIGNATURE_DESC* pRootSigDesc, ID3D12RootSignature** ppRootSignature);
 		void CreateCommonDescriptorHeap(UINT numDescriptors, 
 			ID3D12DescriptorHeap** ppDescriptorHeap,
@@ -97,11 +108,22 @@ namespace D3DCore
 		void CreateTex2DShaderResourceView(
 			ID3D12Resource *pResource,
 			D3D12_CPU_DESCRIPTOR_HANDLE destDescriptor,
-			DXGI_FORMAT format,
+			DXGI_FORMAT InFormat = DXGI_FORMAT_UNKNOWN,
 			UINT mipLevels = 1);
 		void CreateGraphicsPipelineState(D3D12_GRAPHICS_PIPELINE_STATE_DESC* pDesc, ID3D12PipelineState** ppPipelineState);
 		void CreateComputePipelineState(D3D12_COMPUTE_PIPELINE_STATE_DESC* pDesc, ID3D12PipelineState** ppPipelineState);
 		void CreateDefaultBuffer(const void* pData, UINT64 byteSize, ID3D12Resource** ppDefaultBuffer, ID3D12Resource** ppUploadBuffer);
+		void CreateTexture2D(Texture* InTexture);
+		D3D12_GRAPHICS_PIPELINE_STATE_DESC CreateCommonPSO(const std::vector<D3D12_INPUT_ELEMENT_DESC>& InInputLayout, ID3D12RootSignature* InRootSig, ID3DBlob* InShaderVS, ID3DBlob* InShaderPS, ID3D12PipelineState** OutPSO);
+		template<typename TVertex, typename TIndex>
+		// NOTE: NO Section.
+		void CreateCommonGeometry(RenderItem* InRenderItem, const std::vector<TVertex>& vertices, const std::vector<TIndex>& indices);
+		template<typename TLambda = PFVOID>
+		void DrawRenderItem(RenderItem* InRenderItem, const TLambda& lambda = defalut);
+
+		void CreateRtvDescriptorHeaps_AutoUpdate(uint32 InNumRtvs = 0, PFVOID UpdateCallBack = nullptr);
+		void CreateDsvDescriptorHeaps_AutoUpdate(uint32 InNumDsvs = 0, PFVOID UpdateCallBack = nullptr);
+		////////////////////////////////////////////////////////////////////////////////////////////////////////
 
         // Device Accessors.
         RECT GetOutputSize() const { return m_outputSize; }
@@ -131,7 +153,8 @@ namespace D3DCore
 		ID3D12Resource* GetOffscreenRenderTarget(UINT index) const	{ return m_offscreenRenderTargets[Math::Clamp(index, 0u, MAX_OFFSCREEN_RTV_COUNT - 1u)].Get(); }
 
 		// Texture Samplers.
-		const CD3DX12_STATIC_SAMPLER_DESC GetStaticSamplers(const EStaticSampler& type);
+		const CD3DX12_STATIC_SAMPLER_DESC GetStaticSampler(const EStaticSampler& type);
+		std::array<const CD3DX12_STATIC_SAMPLER_DESC, 7> GetAllStaticSamplers();
 
         CD3DX12_CPU_DESCRIPTOR_HANDLE GetRenderTargetView() const
         {
@@ -148,6 +171,11 @@ namespace D3DCore
 			return CD3DX12_CPU_DESCRIPTOR_HANDLE(m_rtvDescriptorHeap->GetCPUDescriptorHandleForHeapStart(),
 				m_backBufferCount + Math::Clamp(index, 0u, MAX_OFFSCREEN_RTV_COUNT - 1u) + 1, m_rtvDescriptorSize); // +1 Msaa RTV.
 		}
+		CD3DX12_CPU_DESCRIPTOR_HANDLE GetCubeMapRenderTargetView() const
+		{
+			return CD3DX12_CPU_DESCRIPTOR_HANDLE(m_rtvDescriptorHeap->GetCPUDescriptorHandleForHeapStart(),
+				m_backBufferCount + MAX_OFFSCREEN_RTV_COUNT + 1, m_rtvDescriptorSize);
+		}
 		CD3DX12_CPU_DESCRIPTOR_HANDLE GetActiveRenderTargetView() const
 		{
 			return (m_options & c_Enable4xMsaa) ? GetMsaaRenderTargetView() :
@@ -161,7 +189,17 @@ namespace D3DCore
 		CD3DX12_CPU_DESCRIPTOR_HANDLE GetMsaaDepthStencilView() const
 		{
 			return CD3DX12_CPU_DESCRIPTOR_HANDLE(m_dsvDescriptorHeap->GetCPUDescriptorHandleForHeapStart(), 
-				m_dsvDescriptorSize);
+				1, m_dsvDescriptorSize);
+		}
+		CD3DX12_CPU_DESCRIPTOR_HANDLE GetNewDepthStencilView() const
+		{
+			return CD3DX12_CPU_DESCRIPTOR_HANDLE(m_dsvDescriptorHeap->GetCPUDescriptorHandleForHeapStart(),
+				2, m_dsvDescriptorSize);
+		}
+		CD3DX12_CPU_DESCRIPTOR_HANDLE GetDepthStencilViewOffset(uint32 InOffset = 0) const
+		{
+			return CD3DX12_CPU_DESCRIPTOR_HANDLE(m_dsvDescriptorHeap->GetCPUDescriptorHandleForHeapStart(),
+				3 + InOffset, m_dsvDescriptorSize);
 		}
 		CD3DX12_CPU_DESCRIPTOR_HANDLE GetActiveDepthStencilView() const
 		{
@@ -169,6 +207,9 @@ namespace D3DCore
 		}
 
     private:
+
+		void CreateRenderTargetView();
+		void CreateDepthStencilView();
 
         void MoveToNextFrame();
         void GetAdapter(IDXGIAdapter1** ppAdapter);
@@ -190,6 +231,7 @@ namespace D3DCore
         Microsoft::WRL::ComPtr<IDXGISwapChain3>             m_swapChain;
         Microsoft::WRL::ComPtr<ID3D12Resource>              m_renderTargets[MAX_BACK_BUFFER_COUNT];
         Microsoft::WRL::ComPtr<ID3D12Resource>              m_depthStencil;
+		Microsoft::WRL::ComPtr<ID3D12Resource>              m_newDepthStencil;
 
 		// MSAA resources.
 		Microsoft::WRL::ComPtr<ID3D12Resource>				m_msaaRenderTarget;
@@ -241,6 +283,10 @@ namespace D3DCore
 		unsigned int										m_targetSampleCount = 4;
 		UINT												m_activeOffscreenRTIndex = 0;
 		bool												m_useWarpDevice = false;
+
+	private:
+
+		static void defalut() {}
     };
 
 	template<typename TLambda>
@@ -259,6 +305,76 @@ namespace D3DCore
 
 		// Wait until all previous GPU work is complete.
 		WaitForGpu();
+	}
+
+	// NOTE: NO Section.
+	template<typename TVertex, typename TIndex>
+	void D3DDeviceResources::CreateCommonGeometry(RenderItem* InRenderItem, const std::vector<TVertex>& vertices, const std::vector<TIndex>& indices)
+	{
+		const UINT vbByteSize = (UINT)vertices.size() * sizeof(TVertex);
+		const UINT ibByteSize = (UINT)indices.size() * sizeof(TIndex);
+
+		InRenderItem->RenderData = std::make_unique<D3DRenderData>();
+
+		ThrowIfFailedV1(D3DCreateBlob(vbByteSize, &InRenderItem->RenderData->VertexBufferCPU));
+		CopyMemory(InRenderItem->RenderData->VertexBufferCPU->GetBufferPointer(), vertices.data(), vbByteSize);
+
+		ThrowIfFailedV1(D3DCreateBlob(ibByteSize, &InRenderItem->RenderData->IndexBufferCPU));
+		CopyMemory(InRenderItem->RenderData->IndexBufferCPU->GetBufferPointer(), indices.data(), ibByteSize);
+
+		CreateDefaultBuffer(vertices.data(), vbByteSize,
+			&InRenderItem->RenderData->VertexBufferGPU, &InRenderItem->RenderData->VertexBufferUploader);
+		CreateDefaultBuffer(indices.data(), ibByteSize,
+			&InRenderItem->RenderData->IndexBufferGPU, &InRenderItem->RenderData->IndexBufferUploader);
+
+		// Vertex Buffer View Data.
+		InRenderItem->RenderData->VertexByteStride = sizeof(TVertex);
+		InRenderItem->RenderData->VertexBufferByteSize = vbByteSize;
+
+		if (std::is_same<TVertex, Vertex>::value)
+			InRenderItem->RenderData->VertexFormat = VF_Vertex;
+		else if ((std::is_same<TVertex, ColorVertex>::value))
+			InRenderItem->RenderData->VertexFormat = VF_ColorVertex;
+
+		// Index Buffer View Data.
+		if (std::is_same<TIndex, uint16>::value)
+			InRenderItem->RenderData->IndexFormat = DXGI_FORMAT_R16_UINT;
+		else if ((std::is_same<TIndex, uint32>::value))
+			InRenderItem->RenderData->IndexFormat = DXGI_FORMAT_R32_UINT;
+		InRenderItem->RenderData->IndexBufferByteSize = ibByteSize;
+
+		Section section;
+		section.IndexCountPerInstance = (UINT)indices.size();
+		section.InstanceCount = 1;
+		section.StartIndexLocation = 0;
+		section.BaseVertexLocation = 0;
+		section.StartInstanceLocation = 0;
+		section.CalcBounds(vertices, indices);
+
+		InRenderItem->RenderData->Sections[InRenderItem->Name] = section;
+	}
+
+	template<typename TLambda /*= PFVOID*/>
+	void D3DDeviceResources::DrawRenderItem(RenderItem* InRenderItem, const TLambda& lambda /*= defalut*/)
+	{
+		auto commandList = GetCommandList();
+
+		commandList->IASetVertexBuffers(0, 1, &InRenderItem->RenderData->VertexBufferView());
+		commandList->IASetIndexBuffer(&InRenderItem->RenderData->IndexBufferView());
+		commandList->IASetPrimitiveTopology(InRenderItem->PrimitiveType);
+
+		// Set/Bind Per Object Data.
+		lambda();
+
+		for (auto& e : InRenderItem->RenderData->Sections)
+		{
+			Section& section = e.second;
+			commandList->DrawIndexedInstanced(section.IndexCountPerInstance,
+				section.InstanceCount,
+				section.StartIndexLocation,
+				section.BaseVertexLocation,
+				section.StartInstanceLocation);
+		}
 	}
 
 }

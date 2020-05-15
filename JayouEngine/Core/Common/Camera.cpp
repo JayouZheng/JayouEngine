@@ -38,6 +38,14 @@ void Camera::SetPosition(const XMFLOAT3& v)
 	m_viewDirty = true;
 }
 
+void Camera::SetPosition(const XMVECTOR& v)
+{
+	XMFLOAT3 temp_v;
+	XMStoreFloat3(&temp_v, v);
+	m_pos = temp_v;
+	m_viewDirty = true;
+}
+
 XMVECTOR Camera::GetRight() const
 {
 	return XMLoadFloat3(&m_right);
@@ -174,6 +182,32 @@ void Camera::SetOrthographicProj()
 	XMStoreFloat4x4(&m_proj, P);
 }
 
+void Camera::SetDirLightFrustum(float radius)
+{
+	// Transform bounding sphere to light space.
+	XMFLOAT3 sphereCenterLS;
+	XMStoreFloat3(&sphereCenterLS, XMVector3TransformCoord(GetPosition(), GetView()));
+
+	// Ortho frustum in light space encloses scene.
+	float l = sphereCenterLS.x - radius;
+	float b = sphereCenterLS.y - radius;
+	float n = sphereCenterLS.z - radius;
+	float r = sphereCenterLS.x + radius;
+	float t = sphereCenterLS.y + radius;
+	float f = sphereCenterLS.z + radius;
+
+	m_nearZ = n;
+	m_farZ = f;
+	XMMATRIX P = XMMatrixOrthographicOffCenterLH(l, r, b, t, n, f);
+
+	XMStoreFloat4x4(&m_proj, P);
+}
+
+XMMATRIX Camera::GetShadowTransform()
+{
+	return GetViewProj() * Camera::NDCToTextureSpace;
+}
+
 void Camera::UpdateProj()
 {
 	switch (m_projType)
@@ -203,6 +237,7 @@ void Camera::LookAt(FXMVECTOR pos, FXMVECTOR target, FXMVECTOR worldUp)
 	m_viewDirty = true;
 }
 
+
 void Camera::LookAt(const XMFLOAT3& pos, const XMFLOAT3& target, const XMFLOAT3& up)
 {
 	XMVECTOR P = XMLoadFloat3(&pos);
@@ -214,10 +249,15 @@ void Camera::LookAt(const XMFLOAT3& pos, const XMFLOAT3& target, const XMFLOAT3&
 	m_viewDirty = true;
 }
 
+void Camera::DirLightLookAt(const XMVECTOR& pos, const XMVECTOR& target, const XMVECTOR& up)
+{
+	XMStoreFloat4x4(&m_view, XMMatrixLookAtLH(pos, target, up));
+}
+
 XMMATRIX Camera::GetView() const
 {
 	// Only return if viewDirty false (After UpdateViewMatrix).
-	assert(!m_viewDirty); 
+	// assert(!m_viewDirty); 
 	return XMLoadFloat4x4(&m_view);
 }
 
@@ -234,7 +274,7 @@ XMMATRIX Camera::GetViewProj() const
 XMFLOAT4X4 Camera::GetView4x4f() const
 {
 	// Only return if viewDirty false (After UpdateViewMatrix).
-	assert(!m_viewDirty);
+	// assert(!m_viewDirty);
 	return m_view;
 }
 
