@@ -25,6 +25,7 @@ namespace Core
 		// Scene.
 		float SceneRadius = 250.0f;
 		int32 CubeMapIndex = -1;
+		int32 CubeMapComboIndex = -1;
 		float WalkSpeed = 50.0f;
 
 		// Grid.

@@ -106,21 +106,20 @@ float3 NormalSampleToWorldSpace(float3 normalMapSample, float3 unitNormalW, floa
 float ConvertDepthToLinear(float4x4 Proj, float Depth)
 {
     float A = Proj[2][2];
-    float B = Proj[3][2];
+    float B = Proj[2][3];
     // Depth = A + B/z
     // => z = B / (Depth - A)
     float linearDepth = B / (Depth - A);
     return linearDepth;
 }
 
-float3 CalcWorldPosFromLinearDepth(float4x4 Proj, float4x4 InvView, float2 NDCPos, float LinearDepth)
+float3 CalcWorldPosFromLinearDepth(float4x4 Proj, float4x4 gInvView, float2 NDCPos, float LinearDepth)
 {
     float4 position;
-
-    position.xy = NDCPos.xy * float2(1.0f / Proj[0][0], 1.0f / Proj[1][1]) * LinearDepth;
+    position.xy = LinearDepth * NDCPos.xy * float2(1.0f / Proj[0][0], 1.0f / Proj[1][1]);
     position.z = LinearDepth;
     position.w = 1.0;
-    return mul(InvView, position).xyz;
+    return mul(gInvView, position).xyz;
 }
 
 

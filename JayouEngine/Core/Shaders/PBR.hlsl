@@ -7,7 +7,8 @@
 struct VertexOut
 {
     float4 PosH : SV_POSITION;
-    float2 NDCPos : TEXCOORD;
+    float2 NDCPos : POSITION;
+    float2 TexC : TEXCOORD;
     
 };
 
@@ -19,6 +20,7 @@ VertexOut VS(uint vid : SV_VertexID)
 	// Map [0, 1]^2 to NDC space [-1, 1].
     vout.PosH = float4(2.0f * texCood.x - 1.0f, 1.0f - 2.0f * texCood.y, 0.0f, 1.0f);
 
+    vout.TexC = texCood;
     vout.NDCPos = vout.PosH.xy;
     
     return vout;
@@ -29,18 +31,18 @@ float4 PS(VertexOut pin) : SV_Target
     LightingInfo info;
     
     int3 location3 = int3(pin.PosH.xy, 0);
-    float depth = gGBuffers[0].Load(location3).r;
+    float depth = gGBuffers[0].Sample(gsamLinearWrap, pin.TexC).r;
     // clip(0.999f - depth);
     
     // Calc Pos From Depth, Bug Left!!!
-    // float linearDepth = ConvertDepthToLinear(gProj, depth);
-    // info.Position = CalcWorldPosFromLinearDepth(gProj, gInvView, pin.NDCPos, linearDepth);
+    float linearDepth = ConvertDepthToLinear(gProj, depth);
+    info.Position = CalcWorldPosFromLinearDepth(gProj, gInvView, pin.NDCPos, linearDepth);
        
-    info.Diffuse = gGBuffers[2].Load(location3).rgb;
-    info.Normal = gGBuffers[3].Load(location3).rgb;
+    info.Diffuse = gGBuffers[2].Sample(gsamLinearWrap, pin.TexC).rgb;
+    info.Normal = gGBuffers[3].Sample(gsamLinearWrap, pin.TexC).rgb;
     info.Normal = normalize(info.Normal * 2.0f - 1.0f);
-    float3 ORM = gGBuffers[4].Load(location3).rgb;
-    info.Position = gGBuffers[5].Load(location3).rgb;
+    float3 ORM = gGBuffers[4].Sample(gsamLinearWrap, pin.TexC).rgb;
+    // info.Position = gGBuffers[5].Sample(gsamLinearWrap, pin.TexC).rgb;
     float AO = ORM.r;
     info.Roughness = ORM.g;
     info.Metallicity = ORM.b;
@@ -80,8 +82,9 @@ float4 PS(VertexOut pin) : SV_Target
          // Add in specular reflections.
         float3 r = reflect(-info.toEye, info.Normal);
         r.y = -r.y;
-        float2 uv = SampleSphericalMap(normalize(r)); // make sure to normalize localPos
-        float3 reflectionColor = gTextures[gCubeMapIndex].Sample(gsamAnisotropicWrap, uv).rgb;
+        float3 toLight = normalize(r);
+        float2 uv = SampleSphericalMap(toLight); // make sure to normalize localPos
+        float3 reflectionColor = gTextures[gCubeMapIndex].Sample(gsamLinearWrap, uv).rgb;
         
         float3 F0 = 0.04f;
         F0 = lerp(F0, info.Diffuse, info.Metallicity);

@@ -560,30 +560,35 @@ void AppGUI::MenuNew()
 				ImGui::DragFloat(u8"Metallicity", &matDesc.Metallicity, 0.01f, 0.0f, 1.0f);
 
 				// Set Textures.
-				static bool bUsedTexture = false;
-				ImGui::Checkbox(u8"使用贴图", &bUsedTexture);
-				if (bUsedTexture)
+				static bool bUseTexture = false;
+				ImGui::Checkbox(u8"使用贴图", &bUseTexture);
+				if (bUseTexture)
 				{
-					std::string allTexNames;
+					std::vector<std::string> allTexNames;
+					std::string allTexNames_Str;
 					for (auto& tex : m_gWorld->m_allTextureRefs)
 					{
 						if (tex->Index != -1)
 						{
-							allTexNames += tex->Name + '\0';
+							allTexNames.push_back(tex->Name);
+							allTexNames_Str += tex->Name + '\0';
 						}
 					}
 					if (!m_gWorld->m_allTextureRefs.empty())
 					{
-						ImGui::Combo(u8"Diffuse", &matDesc.DiffuseMapIndex, allTexNames.c_str(), (int)allTexNames.size());
-						ImGui::Combo(u8"Normal", &matDesc.NormalMapIndex, allTexNames.c_str(), (int)allTexNames.size());
-						ImGui::Combo(u8"ORM", &matDesc.ORMMapIndex, allTexNames.c_str(), (int)allTexNames.size());
+						ImGui::Combo(u8"Diffuse", &matDesc.DiffuseMapComboIndex, allTexNames_Str.c_str(), (int)allTexNames_Str.size());
+						ImGui::Combo(u8"Normal", &matDesc.NormalMapComboIndex, allTexNames_Str.c_str(), (int)allTexNames_Str.size());
+						ImGui::Combo(u8"ORM", &matDesc.ORMMapComboIndex, allTexNames_Str.c_str(), (int)allTexNames_Str.size());
+						if (matDesc.DiffuseMapComboIndex >= 0) matDesc.DiffuseMapName = allTexNames[matDesc.DiffuseMapComboIndex];
+						if (matDesc.NormalMapComboIndex >= 0) matDesc.NormalMapName = allTexNames[matDesc.NormalMapComboIndex];
+						if (matDesc.ORMMapComboIndex >= 0) matDesc.ORMMapName = allTexNames[matDesc.ORMMapComboIndex];
 					}
 				}
 				else
 				{
-					matDesc.DiffuseMapIndex = -1;
-					matDesc.NormalMapIndex = -1;
-					matDesc.ORMMapIndex = -1;
+					matDesc.DiffuseMapComboIndex = -1;
+					matDesc.NormalMapComboIndex = -1;
+					matDesc.ORMMapComboIndex = -1;
 				}
 
 				ImGui::Text(u8"UV变换");
@@ -604,7 +609,7 @@ void AppGUI::MenuNew()
 				}
 
 				if (ImGui::Button(u8"新建##3"))
-					m_gWorld->AddMaterial(matDesc);
+					m_gWorld->AddMaterial(matDesc, bUseTexture);
 			}
 
 			ImGui::End();
@@ -682,24 +687,34 @@ void AppGUI::MenuOption()
 			ImGui::Checkbox(u8"显示天空球", &m_appData->bShowSkySphere);
 			if (m_appData->bShowSkySphere)
 			{
-				std::string allTexNames;
+				std::vector<std::string> allTexNames;
+				std::string allTexNames_Str;
 				for (auto& tex : m_gWorld->m_allTextureRefs)
 				{
 					if (tex->Index != -1)
 					{
-						allTexNames += tex->Name + '\0';
+						allTexNames.push_back(tex->Name);
+						allTexNames_Str += tex->Name + '\0';
 					}
 				}
 				if (!m_gWorld->m_allTextureRefs.empty())
 				{
-					ImGui::Combo(u8"选择环境贴图", &m_appData->CubeMapIndex, allTexNames.c_str(), (int)allTexNames.size());
+					ImGui::Combo(u8"选择环境贴图", &m_appData->CubeMapComboIndex, allTexNames_Str.c_str(), (int)allTexNames_Str.size());
+					if (m_appData->CubeMapComboIndex >= 0)
+					{
+						m_appData->CubeMapIndex = m_gWorld->m_allTextures[allTexNames[m_appData->CubeMapComboIndex]]->Index;
+					}				
 				}
+			}
+			else
+			{
+				m_appData->CubeMapIndex = -1;
 			}
 			ImGui::DragFloat(u8"第一人称移动速度", &m_appData->WalkSpeed, 1.0f, 10.0f, 1000.0f);
 
-			ImGui::Separator();
-			if (ImGui::Checkbox(u8"4 倍超级采样抗锯齿", &m_appData->bEnable4xMsaa))
-				m_appData->bOptionsChanged = true;
+			// ImGui::Separator();
+			// if (ImGui::Checkbox(u8"4 倍超级采样抗锯齿", &m_appData->bEnable4xMsaa))
+				// m_appData->bOptionsChanged = true;
 
 			ImGui::Separator();
 			ImGui::End();
@@ -1161,23 +1176,36 @@ void AppGUI::WorldOutliner()
 					ImGui::DragFloat(u8"Metallicity", &mat->Metallicity, 0.01f, 0.0f, 1.0f);
 
 					// Set Textures.
-					static bool bUsedTexture = false;
-					ImGui::Checkbox(u8"使用贴图", &bUsedTexture);
-					if (bUsedTexture)
+					ImGui::Checkbox(u8"使用贴图", &mat->bUseTexture);
+					if (mat->bUseTexture)
 					{
-						std::string allTexNames;
+						std::vector<std::string> allTexNames;
+						std::string allTexNames_Str;
 						for (auto& tex : m_gWorld->m_allTextureRefs)
 						{
 							if (tex->Index != -1)
 							{
-								allTexNames += tex->Name + '\0';
+								allTexNames.push_back(tex->Name);
+								allTexNames_Str += tex->Name + '\0';
 							}
 						}
 						if (!m_gWorld->m_allTextureRefs.empty())
 						{
-							ImGui::Combo(u8"Diffuse", &mat->DiffuseMapIndex, allTexNames.c_str(), (int)allTexNames.size());
-							ImGui::Combo(u8"Normal", &mat->NormalMapIndex, allTexNames.c_str(), (int)allTexNames.size());
-							ImGui::Combo(u8"ORM", &mat->ORMMapIndex, allTexNames.c_str(), (int)allTexNames.size());
+							ImGui::Combo(u8"Diffuse", &mat->DiffuseMapComboIndex, allTexNames_Str.c_str(), (int)allTexNames_Str.size());
+							ImGui::Combo(u8"Normal", &mat->NormalMapComboIndex, allTexNames_Str.c_str(), (int)allTexNames_Str.size());
+							ImGui::Combo(u8"ORM", &mat->ORMMapComboIndex, allTexNames_Str.c_str(), (int)allTexNames_Str.size());
+							if (mat->DiffuseMapComboIndex >= 0)
+							{
+								mat->DiffuseMapIndex = m_gWorld->m_allTextures[allTexNames[mat->DiffuseMapComboIndex]]->Index;
+							}
+							if (mat->NormalMapComboIndex >= 0)
+							{
+								mat->NormalMapIndex = m_gWorld->m_allTextures[allTexNames[mat->NormalMapComboIndex]]->Index;
+							}
+							if (mat->ORMMapComboIndex >= 0)
+							{
+								mat->ORMMapIndex = m_gWorld->m_allTextures[allTexNames[mat->ORMMapComboIndex]]->Index;
+							}
 						}
 					}
 					else

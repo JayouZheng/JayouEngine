@@ -110,14 +110,20 @@ namespace D3DCore
 		float Roughness = 1.0f;
 		float Metallicity = 1.0f;
 
-		int32 DiffuseMapIndex = -1; // if -1, Vertex Color.
-		int32 NormalMapIndex = -1;  // if -1, Vertex Normal.
-		int32 ORMMapIndex = -1;     // AO, Roughness, Metallicity.
+		int32 DiffuseMapComboIndex = -1; // if -1, Vertex Color.
+		int32 NormalMapComboIndex = -1;  // if -1, Vertex Normal.
+		int32 ORMMapComboIndex = -1;     // AO, Roughness, Metallicity.
+
+		std::string DiffuseMapName = "";
+		std::string NormalMapName = "";
+		std::string ORMMapName = "";
 
 	};
 
 	struct Material : public IObject
 	{
+
+		bool bUseTexture = false;
 
 		XMFLOAT4 DiffuseAlbedo = { 1.0f, 1.0f, 1.0f, 1.0f };
 
@@ -133,6 +139,10 @@ namespace D3DCore
 		int32 DiffuseMapIndex = -1; // if -1, Vertex Color.
 		int32 NormalMapIndex = -1;  // if -1, Vertex Normal.
 		int32 ORMMapIndex = -1;     // AO, Roughness, Metallicity.
+
+		int32 DiffuseMapComboIndex = -1; // if -1, Vertex Color.
+		int32 NormalMapComboIndex = -1;  // if -1, Vertex Normal.
+		int32 ORMMapComboIndex = -1;     // AO, Roughness, Metallicity.
 
 		static int32 Count;
 

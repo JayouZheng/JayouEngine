@@ -1092,7 +1092,7 @@ void AppEntry::CreateApplicationDependentResources()
 	{
 		MaterialDesc matDesc;
 		matDesc.bCanbeDeleted = false;
-		AddMaterial(matDesc);
+		AddMaterial(matDesc, false);
 
 		LightDesc litDesc;
 		litDesc.bCanbeDeleted = false;
@@ -1262,7 +1262,7 @@ void AppEntry::BuildPSO()
 	//////////////////////////////////////////////////////////////////////////
 	// PSO Wireframe.
 	D3D12_GRAPHICS_PIPELINE_STATE_DESC wireframePSO = linePSO;
-	wireframePSO.RasterizerState.AntialiasedLineEnable = m_deviceResources->GetDeviceOptions() & D3DDeviceResources::c_Enable4xMsaa;
+	wireframePSO.RasterizerState.AntialiasedLineEnable = true;
 	wireframePSO.DepthStencilState.DepthFunc = D3D12_COMPARISON_FUNC_LESS_EQUAL;
 	wireframePSO.VS = CD3DX12_SHADER_BYTECODE(m_shaderByteCode["WireframeVS"].Get());
 	m_deviceResources->CreateGraphicsPipelineState(&wireframePSO, &m_PSOs["Wireframe"]);
@@ -1513,6 +1513,11 @@ void GWorld::AddTexture2D(const ImportTexDesc& InTexDesc)
 	{
 		auto texture = std::make_unique<Texture>();
 		texture->Name = InTexDesc.Name;
+
+		for (auto& tex : m_allTextureRefs)
+			if (texture->Name == tex->Name)
+				texture->Name = tex->Name + "_" + std::to_string(texture->Index);
+
 		texture->PathName = InTexDesc.PathName;
 		texture->HCPUDescriptor = GetCPUDescriptorHeapStartOffset((uint32)m_allTextureRefs.size());
 		texture->HGPUDescriptor = GetGPUDescriptorHeapStartOffset((uint32)m_allTextureRefs.size());
@@ -1524,7 +1529,7 @@ void GWorld::AddTexture2D(const ImportTexDesc& InTexDesc)
 	});
 }
 
-void GWorld::AddMaterial(const MaterialDesc& InMaterialDesc)
+void GWorld::AddMaterial(const MaterialDesc& InMaterialDesc, bool bUseTexture /*= true*/)
 {
 	auto material = std::make_unique<Material>();
 	material->Name = InMaterialDesc.Name;
@@ -1539,9 +1544,17 @@ void GWorld::AddMaterial(const MaterialDesc& InMaterialDesc)
 	material->SetTransFormMatrix(InMaterialDesc.Translation, InMaterialDesc.Rotation, InMaterialDesc.Scale);
 	material->Roughness = InMaterialDesc.Roughness;
 	material->Metallicity = InMaterialDesc.Metallicity;
-	material->DiffuseMapIndex = InMaterialDesc.DiffuseMapIndex;
-	material->NormalMapIndex = InMaterialDesc.NormalMapIndex;
-	material->ORMMapIndex = InMaterialDesc.ORMMapIndex;
+	if (bUseTexture)
+	{
+		material->DiffuseMapIndex = InMaterialDesc.DiffuseMapName != "" ? m_allTextures[InMaterialDesc.DiffuseMapName]->Index : -1;
+		material->NormalMapIndex = InMaterialDesc.NormalMapName != "" ? m_allTextures[InMaterialDesc.NormalMapName]->Index : -1;
+		material->ORMMapIndex = InMaterialDesc.ORMMapName != "" ? m_allTextures[InMaterialDesc.ORMMapName]->Index : -1;
+
+		material->DiffuseMapComboIndex = InMaterialDesc.DiffuseMapComboIndex;
+		material->NormalMapComboIndex = InMaterialDesc.NormalMapComboIndex;
+		material->ORMMapComboIndex = InMaterialDesc.ORMMapComboIndex;
+	}
+	material->bUseTexture = bUseTexture;
 
 	GWorldCached(material);
 
@@ -1676,18 +1689,18 @@ void GWorld::GarbageCollection()
 	}
 
 	// BuiltIn GBuffers And One Texture.
-	index = m_maxPreGBuffers + m_maxGBuffers + 1;	
+	index = 1;	
 	for (uint32 i = m_maxPreGBuffers + m_maxGBuffers + 1; i < m_allTextureRefs.size(); ++i)
 	{
 		if (m_allTextureRefs[i]->CanbeDeletedNow())
 		{
 			deletedItemIDNames[3][m_allTextureRefs[i]->Index] = m_allTextureRefs[i]->Name;
-			m_allTextureRefs.erase(m_allTextureRefs.begin() + index);
+			m_allTextureRefs.erase(m_allTextureRefs.begin() + index + m_maxPreGBuffers + m_maxGBuffers);
 			bHasAnyItemsToDelete = true;
 			--i;
 			continue;
 		}
-		m_allTextureRefs[i]->Index = index++;
+		index++;
 	}
 
 	// Now Perform Truely Delete.
@@ -1730,30 +1743,43 @@ void GWorld::GarbageCollection()
 	// Delete Textures.
 	for (auto& id_name : deletedItemIDNames[3])
 	{
-		int32 texID = id_name.first - m_maxPreGBuffers - m_maxGBuffers;
+		int32 texID = id_name.first;
 		// First to Find All References.
 		for (auto& mat : m_allMaterials)
 		{
 			if (mat.second->DiffuseMapIndex == texID)
 			{
 				mat.second->DiffuseMapIndex = -1;
+				mat.second->DiffuseMapComboIndex = -1;
 				mat.second->MarkAsDirty();
 			}
 			if (mat.second->NormalMapIndex == texID)
 			{
 				mat.second->NormalMapIndex = -1;
+				mat.second->NormalMapComboIndex = -1;
 				mat.second->MarkAsDirty();
 			}
 			if (mat.second->ORMMapIndex == texID)
 			{
 				mat.second->ORMMapIndex = -1;
+				mat.second->ORMMapComboIndex = -1;
 				mat.second->MarkAsDirty();
 			}
+			mat.second->DiffuseMapComboIndex--;
+			mat.second->NormalMapComboIndex--;
+			mat.second->ORMMapComboIndex--;
 		}
+
+		if (m_appGui->GetAppData()->CubeMapIndex == texID)
+		{
+			m_appGui->GetAppData()->CubeMapIndex = -1;
+			m_appGui->GetAppData()->CubeMapComboIndex = -1;
+		}
+		m_appGui->GetAppData()->CubeMapComboIndex--;	
 
 		m_allTextures.erase(id_name.second);
 	}
-	Texture::Count = (uint32)m_allTextures.size();
+	Texture::Count = (uint32)m_allTextures.size() - m_maxPreGBuffers - m_maxGBuffers;
 
 	// Finally Resize Buffers if Needed.
 	if (bHasAnyItemsToDelete && bResizeObjCBNeeded)

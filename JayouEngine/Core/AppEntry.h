@@ -81,7 +81,7 @@ public:
 	void AddRenderItem(const BuiltInGeoDesc& InGeoDesc);
 	void AddRenderItem(const ImportGeoDesc& InGeoDesc);
 	void AddTexture2D(const ImportTexDesc& InTexDesc);
-	void AddMaterial(const MaterialDesc& InMaterialDesc);
+	void AddMaterial(const MaterialDesc& InMaterialDesc, bool bUseTexture = true);
 	void AddLight(const LightDesc& InLightDesc);
 
 	void GarbageCollection();
