@@ -49,12 +49,12 @@ float4 PS(VertexOut pin) : SV_Target
     
     info.toEye = normalize(gEyePosW - info.Position);
     
+    float3 color = 0.0f;
+    
     // Calc Shadow Factor.
     float4 shadowPosH = mul(gShadowTransform, float4(info.Position, 1.0f));
     float shadowFactor = CalcShadowFactor(shadowPosH);
-    
-    float3 color = 0.0f;
-    
+       
     for (uint i = 0; i < gNumDirLights; ++i)
     {
         info.Light = gLightData[i];
@@ -75,9 +75,7 @@ float4 PS(VertexOut pin) : SV_Target
         color += ComputeSpotLight(info);
     }
     
-    color += AO * gAmbientFactor.rgb * info.Diffuse;
-    
-    if (gCubeMapIndex != -1)
+    if (gCubeMapIndex >= 0)
     {
          // Add in specular reflections.
         float3 r = reflect(-info.toEye, info.Normal);
@@ -92,8 +90,11 @@ float4 PS(VertexOut pin) : SV_Target
         float HdotV = max(dot(halfVector, info.toEye), 0.0f);
         float3 fresnelFactor = Fresnel_Epic(F0, HdotV);
         
-        color += (1.0f - info.Roughness) * fresnelFactor * reflectionColor.rgb;
-    }  
+        //reflectionColor = (1.0f - info.Roughness) * fresnelFactor * reflectionColor;
+        info.Diffuse = lerp(info.Diffuse, reflectionColor, fresnelFactor);
+    }
+    
+    color += AO * gAmbientFactor.rgb * info.Diffuse;
         
     // HDR to LDR (saturate because float near 1.0f may be overflow).
     // * 1.0f is a curve control value.

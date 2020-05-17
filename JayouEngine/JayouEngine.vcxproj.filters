@@ -20,9 +20,13 @@
     <None Include="Core\Shaders\GBuffer.hlsl">
       <Filter>Core\Shaders</Filter>
     </None>
-    <None Include="Core\Shaders\Shadow.hlsl" />
-    <None Include="Core\Shaders\SkySphere.hlsl" />
     <None Include="Core\Shaders\PBR.hlsl">
+      <Filter>Core\Shaders</Filter>
+    </None>
+    <None Include="Core\Shaders\Shadow.hlsl">
+      <Filter>Core\Shaders</Filter>
+    </None>
+    <None Include="Core\Shaders\SkySphere.hlsl">
       <Filter>Core\Shaders</Filter>
     </None>
   </ItemGroup>

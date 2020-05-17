@@ -65,21 +65,21 @@ GBufferOut PS(VertexOut pin)
     float4 diffuse = matData.DiffuseAlbedo;
     float roughness = matData.Roughness;
     float metallicity = matData.Metallicity;
-    uint diffuseMapIndex = matData.DiffuseMapIndex;
-    uint normalMapIndex = matData.NormalMapIndex;
-    uint ORMMapIndex = matData.ORMMapIndex;
+    int diffuseMapIndex = matData.DiffuseMapIndex;
+    int normalMapIndex = matData.NormalMapIndex;
+    int ORMMapIndex = matData.ORMMapIndex;
 	
 	// Interpolating normal can unnormalize it, so renormalize it.
     pin.NormalW = normalize(pin.NormalW);
 	
-    float4 diffuseMap = diffuseMapIndex != -1 ? gTextures[diffuseMapIndex].Sample(gsamAnisotropicWrap, pin.TexC) : 1.0f;
+    float4 diffuseMap = diffuseMapIndex >= 0 ? gTextures[diffuseMapIndex].Sample(gsamAnisotropicWrap, pin.TexC) : 1.0f;
     float3 normalMapW = pin.NormalW;
-    if (normalMapIndex != -1)
+    if (normalMapIndex >= 0)
     {
         float3 normalMap = gTextures[normalMapIndex].Sample(gsamAnisotropicWrap, pin.TexC).rgb;
         normalMapW = NormalSampleToWorldSpace(normalMap, pin.NormalW, pin.TangentW);
     }        
-    float3 ORMMapMap = ORMMapIndex != -1 ? gTextures[ORMMapIndex].Sample(gsamAnisotropicWrap, pin.TexC).rgb : 1.0f;
+    float3 ORMMapMap = ORMMapIndex >= 0 ? gTextures[ORMMapIndex].Sample(gsamAnisotropicWrap, pin.TexC).rgb : 1.0f;
 
     gBuffer.DiffuseTarget = diffuse * diffuseMap;
     gBuffer.NormalTarget = normalMapW * 0.5f + 0.5f; // [-1, 1] to [0, 1].
