@@ -41,10 +41,11 @@ void PS(VertexOut pin)
 	// Fetch the material data.
 	MaterialData matData = gMaterialData[gMaterialIndex];
 	float4 diffuseAlbedo = matData.DiffuseAlbedo;
-    uint diffuseMapIndex = matData.DiffuseMapIndex;
+    int diffuseMapIndex = matData.DiffuseMapIndex;
 	
 	// Dynamically look up the texture in the array.
-	diffuseAlbedo *= gTextures[diffuseMapIndex].Sample(gsamAnisotropicWrap, pin.TexC);
+    float4 diffuseMap = diffuseMapIndex >= 0 ? gTextures[diffuseMapIndex].Sample(gsamAnisotropicWrap, pin.TexC) : 1.0f;
+	diffuseAlbedo *= diffuseMap;
 
 #ifdef ALPHA_TEST
     // Discard pixel if texture alpha < 0.1.  We do this test as soon 

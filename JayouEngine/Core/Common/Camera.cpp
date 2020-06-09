@@ -186,8 +186,7 @@ void Camera::SetDirLightFrustum(float radius)
 {
 	// Transform bounding sphere to light space.
 	XMFLOAT3 sphereCenterLS;
-	XMFLOAT3 Center = XMFLOAT3(0.0f, 0.0f, 0.0f);
-	XMVECTOR targetPos = XMLoadFloat3(&Center);
+	XMVECTOR targetPos = XMVectorSet(0.0f, 0.0f, 0.0f, 0.0f);
 	XMStoreFloat3(&sphereCenterLS, XMVector3TransformCoord(targetPos, GetView()));
 
 	// Ortho frustum in light space encloses scene.

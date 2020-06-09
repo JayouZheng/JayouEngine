@@ -314,8 +314,7 @@ void AppEntry::UpdateCamera()
 		XMVECTOR lightDir = XMLoadFloat3(&m_allLightRefs[0]->Direction);
 		lightDir = XMVector3Normalize(lightDir);
 		XMVECTOR lightPos = -2.0f*lightDir*(m_appGui->GetAppData()->SceneRadius > 10.0f ? m_appGui->GetAppData()->SceneRadius : 10.0f);
-		XMFLOAT3 Center = XMFLOAT3(0.0f, 0.0f, 0.0f);
-		XMVECTOR targetPos = XMLoadFloat3(&Center);
+		XMVECTOR targetPos = XMVectorSet(0.0f, 0.0f, 0.0f, 0.0f);
 		XMVECTOR lightUp = XMVectorSet(0.0f, 1.0f, 0.0f, 0.0f);
 
 		// Define View Space.
@@ -531,9 +530,7 @@ void AppEntry::DrawSceneToShadowMap()
 	// Note the active PSO also must specify a render target count of 0.
 	commandList->OMSetRenderTargets(0, nullptr, false, &m_shadowMap->Dsv());
 
-	UINT passCBufferByteSize = CalcConstantBufferByteSize(sizeof(PassConstant));
-
-	commandList->SetGraphicsRootConstantBufferView(1, m_currFrameResource->GetBufferGPUVirtualAddress<PassConstant>() + passCBufferByteSize);
+	commandList->SetGraphicsRootConstantBufferView(1, m_currFrameResource->GetBufferGPUVirtualAddress<PassConstant>() + passCBByteSize);
 
 	commandList->SetPipelineState(m_PSOs["Shadow"].Get());
 
