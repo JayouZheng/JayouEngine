@@ -1659,6 +1659,21 @@ void GWorld::GarbageCollection()
 	{
 		if (m_allLightRefs[i]->CanbeDeletedNow())
 		{
+			switch (m_allLightRefs[i]->LightType)
+			{
+			case LT_Directional:
+				m_numDirLights--;
+				break;
+			case LT_Point:
+				m_numPointLights--;
+				break;
+			case LT_Spot:
+				m_numSpotLights--;
+				break;
+			default:
+				break;
+			}
+
 			deletedItemIDNames[1][m_allLightRefs[i]->Index] = m_allLightRefs[i]->Name;
 			m_allLightRefs.erase(m_allLightRefs.begin() + index);
 			bHasAnyItemsToDelete = true;

@@ -51,7 +51,7 @@ void PS(VertexOut pin)
     // Discard pixel if texture alpha < 0.1.  We do this test as soon 
     // as possible in the shader so that we can potentially exit the
     // shader early, thereby skipping the rest of the shader code.
-    clip(diffuseAlbedo.a - 0.1f);
+    // clip(diffuseAlbedo.a - 0.1f);
 #endif
 }
 
