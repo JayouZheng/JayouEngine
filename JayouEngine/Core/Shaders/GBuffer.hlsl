@@ -56,7 +56,7 @@ VertexOut VS(VertexIn vin)
     return vout;
 }
 
-GBufferOut PS(VertexOut pin)
+GBufferOut PS(VertexOut pin, out float OutDepth : SV_Depth)
 {
     GBufferOut gBuffer;
     
@@ -87,5 +87,6 @@ GBufferOut PS(VertexOut pin)
 
     gBuffer.Pos = float4(pin.PosW, 1.0f);
     
+    OutDepth = pin.PosH.z;
     return gBuffer;
 }

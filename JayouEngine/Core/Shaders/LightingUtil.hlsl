@@ -2,6 +2,11 @@
 // LightingUitl.hlsl
 //
 
+#include "MobileGGX.hlsl"
+
+#define MOBILEGGX_TEST 0
+#define PHONGAPPROX_TEST 0
+
 static const float PI = 3.14159265359f;
 
 struct LightData
@@ -46,15 +51,25 @@ struct LightingInfo
     LightData Light;
 };
 
-float3 SchlickFresnel(float3 R0, float3 normal, float3 lightVec)
+#if PHONGAPPROX_TEST
+half PhongApprox(half Roughness, half RoL)
 {
-    float cosIncidentAngle = saturate(dot(normal, lightVec));
+    half a = Roughness * Roughness; // 1 mul
+	//!! Ronin Hack?
+    a = max(a, 0.008); // avoid underflow in FP16, next sqr should be bigger than 6.1e-5
+    half a2 = a * a; // 1 mul
+    half rcp_a2 = rcp(a2); // 1 rcp
+	//half rcp_a2 = exp2( -6.88886882 * Roughness + 6.88886882 );
 
-    float f0 = 1.0f - cosIncidentAngle;
-    float3 reflectPercent = R0 + (1.0f - R0) * (f0 * f0 * f0 * f0 * f0);
-
-    return reflectPercent;
+	// Spherical Gaussian approximation: pow( x, n ) ~= exp( (n + 0.775) * (x - 1) )
+	// Phong: n = 0.5 / a2 - 0.5
+	// 0.5 / ln(2), 0.275 / ln(2)
+    half c = 0.72134752 * rcp_a2 + 0.39674113; // 1 mad
+    half p = rcp_a2 * exp2(c * RoL - c); // 2 mad, 1 exp2, 1 mul
+	// Total 7 instr
+    return min(p, rcp_a2); // Avoid overflow/underflow on Mali GPUs
 }
+#endif
 
 float3 Fresnel_Epic(float3 F0, float HdotV)
 {
@@ -89,6 +104,10 @@ float3 PBR_DirectLighting(float3 Diffuse, float3 InNormal, float Roughness, floa
     float3 toLight = normalize(IntoLight);
     float3 toEye = normalize(IntoEye);
     
+    float3 reflectLight = reflect(-toLight, Normal);
+    
+    float RoL = saturate(dot(reflectLight, toLight));
+    
     float3 F0 = 0.04f;
     F0 = lerp(F0, Diffuse, Metallicity);
     float3 halfVector = normalize(toLight + toEye);
@@ -96,12 +115,19 @@ float3 PBR_DirectLighting(float3 Diffuse, float3 InNormal, float Roughness, floa
     float HdotN = max(dot(halfVector, Normal), 0.0f);
     float NdotL = max(dot(Normal, toLight), 0.0f);
     float NdotV = max(dot(Normal, toEye), 0.0f);
+    
+#if MOBILEGGX_TEST
+    return GGX_Mobile(Roughness, HdotN, halfVector, Normal);
+#elif PHONGAPPROX_TEST
+    return PhongApprox(Roughness, RoL);
+#else
     float3 Ks = Fresnel_Epic(F0, HdotV);
     float3 Kd = 1.0f - Ks;
     
     float3 Fr = Kd * F_Lambert(Diffuse, Metallicity) + Ks * F_Cook_Torrance(HdotN, NdotL, NdotV, Roughness);
     
     return Fr * LightStrength * NdotL;
+#endif
 }
 
 float LinearFalloff(float Distance, float FalloffStart, float FalloffEnd)

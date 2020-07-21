@@ -34,7 +34,7 @@ float4 PS(VertexOut pin) : SV_Target
     float depth = gGBuffers[0].Sample(gsamLinearWrap, pin.TexC).r;
     // clip(0.999f - depth);
     
-    // Calc Pos From Depth, Bug Left!!!
+    // Calc Pos From Depth.
     float linearDepth = ConvertDepthToLinear(gProj, depth);
     info.Position = CalcWorldPosFromLinearDepth(gProj, gInvView, pin.NDCPos, linearDepth);
        
@@ -95,6 +95,8 @@ float4 PS(VertexOut pin) : SV_Target
     }
     
     color += AO * gAmbientFactor.rgb * info.Diffuse;
+    
+    color *= (saturate(dot(info.toEye, info.Normal))); // < 0.2f) ? 0 : 1;
         
     // HDR to LDR (saturate because float near 1.0f may be overflow).
     // * 1.0f is a curve control value.

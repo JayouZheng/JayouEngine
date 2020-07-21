@@ -29,6 +29,9 @@
     <None Include="Core\Shaders\SkySphere.hlsl">
       <Filter>Core\Shaders</Filter>
     </None>
+    <None Include="Core\Shaders\MobileGGX.hlsl">
+      <Filter>Core\Shaders</Filter>
+    </None>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Core\JayouEngine.h">
