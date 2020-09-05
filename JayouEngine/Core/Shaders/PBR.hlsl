@@ -96,7 +96,7 @@ float4 PS(VertexOut pin) : SV_Target
     
     color += AO * gAmbientFactor.rgb * info.Diffuse;
     
-    color *= (saturate(dot(info.toEye, info.Normal))); // < 0.2f) ? 0 : 1;
+    // color *= (saturate(dot(info.toEye, info.Normal))); // < 0.2f) ? 0 : 1;
         
     // HDR to LDR (saturate because float near 1.0f may be overflow).
     // * 1.0f is a curve control value.

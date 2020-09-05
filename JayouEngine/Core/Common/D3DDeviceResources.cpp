@@ -1367,7 +1367,7 @@ const CD3DX12_STATIC_SAMPLER_DESC D3DDeviceResources::GetStaticSampler(const ESt
 		D3D12_TEXTURE_ADDRESS_MODE_BORDER,  // addressV
 		D3D12_TEXTURE_ADDRESS_MODE_BORDER,  // addressW
 		0.0f,                               // mipLODBias
-		16,                                 // maxAnisotropy
+		1, //16,                                 // maxAnisotropy
 		D3D12_COMPARISON_FUNC_LESS_EQUAL,
 		D3D12_STATIC_BORDER_COLOR_OPAQUE_BLACK);
 
