@@ -3,6 +3,7 @@
 //
 
 #include "D3DDeviceResources.h"
+#include <stdexcept>
 
 using namespace DirectX;
 using namespace D3DCore;
